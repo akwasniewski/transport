@@ -9,8 +9,9 @@ print(f"Liczba węzłów: {len(G.nodes)}")
 print(f"Liczba krawędzi: {len(G.edges)}")
 
 G_undirected = G.to_undirected()
+G_normalized = nx.convert_node_labels_to_integers(G_undirected, first_label=0, ordering='default')
 
-snap_file = "graphs/krakow_snap.txt"
-nx.write_edgelist(G_undirected, snap_file, data=False)
+snap_file = "graph_building/krakow_snap.txt"
+nx.write_edgelist(G_normalized, snap_file, data=False)
 
 print(f"Network exported to {snap_file} in SNAP format.")
