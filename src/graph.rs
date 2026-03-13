@@ -6,6 +6,7 @@ use ordered_float::OrderedFloat;
 pub struct Vertex{
     pub (crate) label: usize,
     pub (crate) connections: HashMap<usize, OrderedFloat<f32>>,
+    pub(crate) coords: Option<(f64, f64)>, // Added coordinates
 }
 
 impl Vertex{
@@ -14,7 +15,12 @@ impl Vertex{
         Self{
             label,
             connections,
+            coords: None,
         }
+    }
+
+    pub fn set_coords(&mut self, lat: f64, lon: f64) {
+        self.coords = Some((lat, lon));
     }
 }
 
@@ -63,5 +69,24 @@ impl Graph{
         }
 
         res
+    }
+
+      pub fn add_coords(&mut self, input: &str) {
+        for line in input.lines() {
+            let line = line.trim();
+            if line.is_empty() {
+                continue;
+            }
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() != 3 {
+                panic!("Expected 3 values per line, got {}", parts.len());
+            }
+
+            let id: usize = parts[0].parse().expect("Failed to parse vertex id");
+            let lat: f64 = parts[1].parse().expect("Failed to parse latitude");
+            let lon: f64 = parts[2].parse().expect("Failed to parse longitude");
+
+            self.vertices[id].set_coords(lat, lon);
+        }
     }
 }
