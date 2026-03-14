@@ -2,3 +2,4 @@
 *.pbf
 cache/
 *.txt
+.DS_Store
