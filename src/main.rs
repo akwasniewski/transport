@@ -9,9 +9,12 @@ use crate::{
     graph_app::GraphApp,
 };
 use std::{
+    cell::RefCell,
     fs,
+    rc::Rc,
     sync::{Arc, Mutex},
     thread,
+    time::Duration,
 };
 fn main() {
     let snap_data = fs::read_to_string("graphs/krakow_snap.txt").expect("Failed to read SNAP file");
@@ -21,29 +24,12 @@ fn main() {
     let mut graph = Graph::from_snap(&snap_data);
     graph.add_coords(&coords_data);
 
-    let res = dijsktra(&graph, 9, 100).unwrap();
-
-    println!("some Dijkstra {res}");
-
-    let res = a_star_2d(&graph, 9, 100).unwrap();
-
-    println!("some a* {res}");
-
-    let graph_arc = Arc::new(Mutex::new(graph));
+    let graph_arc = Arc::new(graph);
 
     let anim_graph = graph_arc.clone();
     thread::spawn(move || {
-        let mut idx = 0;
-        loop {
-            {
-                let mut g = anim_graph.lock().unwrap();
-                let n = g.vertices.len();
-                g.vertices[idx % n].color = egui::Color32::LIGHT_BLUE;
-            }
-
-            idx += 1;
-            thread::sleep(std::time::Duration::from_millis(10));
-        }
+        let res = dijsktra(anim_graph, 0, 6000, true).unwrap();
+        println!("res: {:?}", res)
     });
 
     let options = eframe::NativeOptions::default();

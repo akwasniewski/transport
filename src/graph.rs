@@ -1,12 +1,12 @@
 use eframe::egui;
 use ordered_float::OrderedFloat;
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Mutex};
 #[derive(Debug)]
 pub struct Vertex {
     pub(crate) label: usize,
     pub(crate) connections: HashMap<usize, OrderedFloat<f64>>,
     pub(crate) coords: (f64, f64),
-    pub(crate) color: egui::Color32,
+    pub(crate) color: Mutex<egui::Color32>,
 }
 impl Vertex {
     pub fn new(label: usize) -> Self {
@@ -15,11 +15,15 @@ impl Vertex {
             label,
             connections,
             coords: (0.0, 0.0),
-            color: egui::Color32::LIGHT_RED,
+            color: Mutex::new(egui::Color32::LIGHT_RED),
         }
     }
     pub fn set_coords(&mut self, lat: f64, lon: f64) {
         self.coords = (lat, lon);
+    }
+    pub fn recolor(&self, new_color: egui::Color32) {
+        let mut color = self.color.lock().unwrap();
+        *color = new_color;
     }
 }
 #[derive(Debug)]
@@ -76,4 +80,3 @@ impl Graph {
         }
     }
 }
-
