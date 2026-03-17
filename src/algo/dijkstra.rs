@@ -3,7 +3,7 @@ use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
 use std::{collections::BinaryHeap, sync::Arc, thread, time::Duration};
 
-pub fn dijsktra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Option<(f64, usize)> {
+pub fn dijkstra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Option<(f64, usize)> {
     let mut dist: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
 
     let mut que: BinaryHeap<QueueItem> = BinaryHeap::new();
@@ -16,7 +16,7 @@ pub fn dijsktra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Opt
     while !que.is_empty() {
         let cur = que.pop().unwrap();
 
-        if animate {
+        if animate && cur.vertex != from && cur.vertex != to {
             graph.vertices[cur.vertex].recolor(Color32::LIGHT_BLUE);
             thread::sleep(Duration::from_millis(2));
         }

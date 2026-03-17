@@ -1,6 +1,6 @@
 use eframe::egui;
 use ordered_float::OrderedFloat;
-use std::{collections::HashMap, sync::Mutex};
+use std::{collections::HashMap, fs, sync::Mutex};
 #[derive(Debug)]
 pub struct Vertex {
     pub(crate) label: usize,
@@ -78,5 +78,15 @@ impl Graph {
             let lon: f64 = parts[2].parse().expect("Failed to parse longitude");
             self.vertices[id].set_coords(lat, lon);
         }
+    }
+    pub fn from_files(snap_path: &str, coords_path: &str) -> Graph {
+        let snap_data = fs::read_to_string(snap_path)
+            .unwrap_or_else(|_| panic!("Failed to read SNAP file: {snap_path}"));
+        let coords_data = fs::read_to_string(coords_path)
+            .unwrap_or_else(|_| panic!("Failed to read coords file: {coords_path}"));
+
+        let mut graph = Graph::from_snap(&snap_data);
+        graph.add_coords(&coords_data);
+        graph
     }
 }

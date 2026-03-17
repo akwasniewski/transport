@@ -1,26 +1,28 @@
 use eframe::egui;
-use std::sync::{Arc, Mutex};
+use std::{collections::HashSet, sync::Arc};
 
 use crate::graph::Graph;
 
-pub struct GraphApp {
+pub struct VisApp {
     pub graph: Arc<Graph>,
     vertex_pos: Vec<egui::Pos2>,               // precomputed positions
     edge_cache: Vec<(egui::Pos2, egui::Pos2)>, // precomputed edges
     last_size: egui::Vec2,
     resize_countdown: u8,
+    big_vertices: HashSet<usize>,
 }
 
 const RESIZE_COUNTDOWN_THRESHOLD: u8 = 4;
 
-impl GraphApp {
-    pub fn new(graph: Arc<Graph>) -> Self {
+impl VisApp {
+    pub fn new(graph: Arc<Graph>, big_vertices: HashSet<usize>) -> Self {
         Self {
             graph,
             vertex_pos: Vec::new(),
             edge_cache: Vec::new(),
             last_size: egui::Vec2::ZERO,
             resize_countdown: 0,
+            big_vertices,
         }
     }
 
@@ -89,7 +91,7 @@ impl GraphApp {
     }
 }
 
-impl eframe::App for GraphApp {
+impl eframe::App for VisApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let size = ctx.available_rect().size();
         // precompute positions if empty
@@ -119,10 +121,31 @@ impl eframe::App for GraphApp {
             // draw vertices using precomputed positions
             for (i, pos) in self.vertex_pos.iter().enumerate() {
                 let cur_color = self.graph.vertices[i].color.lock().unwrap();
-                painter.circle_filled(*pos, 1.5, *cur_color);
+                painter.circle_filled(
+                    *pos,
+                    if self.big_vertices.contains(&i) {
+                        5.0
+                    } else {
+                        1.5
+                    },
+                    *cur_color,
+                );
             }
         });
 
         ctx.request_repaint(); // continue animation
     }
+}
+
+pub fn run_gui(graph_arc: Arc<Graph>, big_vertices: HashSet<usize>) {
+    let options = eframe::NativeOptions::default();
+    eframe::run_native(
+        "Graph Visualization",
+        options,
+        Box::new({
+            let graph = graph_arc.clone();
+            move |_cc| Ok(Box::new(VisApp::new(graph.clone(), big_vertices)))
+        }),
+    )
+    .expect("Failed to start GUI");
 }
