@@ -1,21 +1,14 @@
 mod algo;
 mod graph;
 mod graph_app;
-use eframe::egui;
 
 use crate::{
-    algo::{a_star_2d, dijsktra},
+    algo::astar::{astar, heuristics::earth_dist},
     graph::Graph,
     graph_app::GraphApp,
 };
-use std::{
-    cell::RefCell,
-    fs,
-    rc::Rc,
-    sync::{Arc, Mutex},
-    thread,
-    time::Duration,
-};
+use std::{fs, sync::Arc, thread};
+
 fn main() {
     let snap_data = fs::read_to_string("graphs/krakow_snap.txt").expect("Failed to read SNAP file");
     let coords_data =
@@ -28,7 +21,7 @@ fn main() {
 
     let anim_graph = graph_arc.clone();
     thread::spawn(move || {
-        let res = dijsktra(anim_graph, 0, 6000, true).unwrap();
+        let res = astar(anim_graph, 0, 6000, true, earth_dist);
         println!("res: {:?}", res)
     });
 
