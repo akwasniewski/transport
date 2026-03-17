@@ -50,7 +50,19 @@ pub fn dijsktra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Opt
 
 pub fn a_star_2d(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Option<(f64, usize)> {
     fn simple_dist(coords1: (f64, f64), coords2: (f64, f64)) -> f64 {
-        f64::sqrt(f64::powf(coords2.0 - coords1.0, 2.0) + f64::powf(coords2.1 - coords1.1, 2.0))
+        let r = 6371009.0; // earth's radius
+
+        let coords1 = (coords1.0.to_radians(), coords1.1.to_radians());
+        let coords2 = (coords2.0.to_radians(), coords2.1.to_radians());
+
+        let delta_lat = coords1.0 - coords2.0;
+        let mid_lat = (coords1.0 + coords2.0) / 2.0;
+        let delta_long = coords1.1 - coords2.1;
+
+        let x = delta_lat;
+        let y = mid_lat.cos() * delta_long;
+        let tunnel_dist = (x.powi(2) + y.powi(2)).sqrt();
+        2.0 * r * (tunnel_dist / 2.0).asin()
     }
 
     let target_coords = graph.vertices[to].coords;
@@ -72,12 +84,6 @@ pub fn a_star_2d(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Op
         if animate {
             graph.vertices[cur.vertex].recolor(Color32::LIGHT_BLUE);
             thread::sleep(Duration::from_millis(2));
-        }
-
-        if cur.cost - simple_dist(graph.vertices[cur.vertex].coords, target_coords)
-            > dist[cur.vertex]
-        {
-            continue;
         }
 
         visited_nodes += 1;
