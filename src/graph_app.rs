@@ -7,7 +7,11 @@ pub struct GraphApp {
     pub graph: Arc<Graph>,
     vertex_pos: Vec<egui::Pos2>,               // precomputed positions
     edge_cache: Vec<(egui::Pos2, egui::Pos2)>, // precomputed edges
+    last_size: egui::Vec2,
+    resize_countdown: u8,
 }
+
+const RESIZE_COUNTDOWN_THRESHOLD: u8 = 4;
 
 impl GraphApp {
     pub fn new(graph: Arc<Graph>) -> Self {
@@ -15,6 +19,8 @@ impl GraphApp {
             graph,
             vertex_pos: Vec::new(),
             edge_cache: Vec::new(),
+            last_size: egui::Vec2::ZERO,
+            resize_countdown: 0,
         }
     }
 
@@ -86,11 +92,19 @@ impl GraphApp {
 impl eframe::App for GraphApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let size = ctx.available_rect().size();
-
         // precompute positions if empty
-        if self.vertex_pos.is_empty() || self.edge_cache.is_empty() {
+        if self.vertex_pos.is_empty()
+            || self.edge_cache.is_empty()
+            || self.resize_countdown == RESIZE_COUNTDOWN_THRESHOLD
+        {
+            self.resize_countdown = 0;
             self.precompute(size);
+        } else if size != self.last_size {
+            self.resize_countdown = 1;
+        } else if self.resize_countdown != 0 {
+            self.resize_countdown += 1;
         }
+        self.last_size = size;
 
         egui::CentralPanel::default().show(ctx, |ui| {
             let painter = ui.painter();
