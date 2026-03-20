@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use ordered_float::OrderedFloat;
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct QueueItem {
     pub vertex: usize,
     pub cost: OrderedFloat<f64>,

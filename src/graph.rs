@@ -5,6 +5,7 @@ use std::{collections::HashMap, fs, sync::Mutex};
 pub struct Vertex {
     pub(crate) label: usize,
     pub(crate) connections: HashMap<usize, OrderedFloat<f64>>,
+    pub(crate) incoming: HashMap<usize, OrderedFloat<f64>>,
     pub(crate) coords: (f64, f64),
     pub(crate) color: Mutex<egui::Color32>,
 }
@@ -14,6 +15,7 @@ impl Vertex {
         Self {
             label,
             connections,
+            incoming: HashMap::new(),
             coords: (0.0, 0.0),
             color: Mutex::new(egui::Color32::LIGHT_RED),
         }
@@ -42,6 +44,9 @@ impl Graph {
     pub fn add_edge(&mut self, from: usize, to: usize, travel_time: OrderedFloat<f64>) {
         self.vertices[from].connections.insert(to, travel_time);
     }
+    pub fn add_reverse_edges(&mut self, from: usize, to: usize, travel_time: OrderedFloat<f64>) {
+        self.vertices[from].incoming.insert(to, travel_time);
+    }
     pub fn from_snap(snap: &str) -> Self {
         let mut res = Graph::new(9765);
         for line in snap.lines() {
@@ -60,6 +65,7 @@ impl Graph {
                 .map(OrderedFloat)
                 .expect("Failed to parse length");
             res.add_edge(u, v, length);
+            res.add_reverse_edges(v, u, length)
         }
         res
     }
