@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, fmt};
 
 use ordered_float::OrderedFloat;
 
@@ -20,5 +20,24 @@ impl Ord for QueueItem {
             .cost
             .cmp(&self.cost)
             .then_with(|| self.vertex.cmp(&other.vertex))
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct AlgoResult {
+    pub distance: Option<f64>,
+    pub visited_nodes: usize,
+}
+
+impl fmt::Display for AlgoResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.distance {
+            Some(d) => write!(
+                f,
+                "Distance: {:.2}, Visited edges: {}",
+                d, self.visited_nodes
+            ),
+            None => write!(f, "No path found, Visited nodes: {}", self.visited_nodes),
+        }
     }
 }

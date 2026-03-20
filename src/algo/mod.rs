@@ -1,3 +1,4 @@
+pub mod algo_result;
 pub mod astar;
 pub mod bidirectional_dijkstra;
 pub mod dijkstra;

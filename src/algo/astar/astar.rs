@@ -1,4 +1,7 @@
-use crate::{algo::utils::QueueItem, graph::Graph};
+use crate::{
+    algo::{algo_result::AlgoResult, utils::QueueItem},
+    graph::Graph,
+};
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
 use std::{collections::BinaryHeap, sync::Arc, thread, time::Duration};
@@ -9,7 +12,7 @@ pub fn astar(
     to: usize,
     animate: bool,
     potential: fn((f64, f64), (f64, f64)) -> f64,
-) -> Option<(f64, usize)> {
+) -> AlgoResult {
     let target_coords = graph.vertices[to].coords;
 
     let mut dist: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
@@ -34,7 +37,10 @@ pub fn astar(
         visited_nodes += 1;
 
         if cur.vertex == to {
-            return Some((dist[to].0, visited_nodes));
+            return AlgoResult {
+                distance: Some(dist[to].0),
+                visited_nodes,
+            };
         }
 
         for c in &graph.vertices[cur.vertex].connections {
@@ -48,5 +54,8 @@ pub fn astar(
             }
         }
     }
-    None
+    AlgoResult {
+        distance: None,
+        visited_nodes,
+    }
 }

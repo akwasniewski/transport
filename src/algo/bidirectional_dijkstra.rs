@@ -1,4 +1,7 @@
-use crate::{algo::utils::QueueItem, graph::Graph};
+use crate::{
+    algo::{algo_result::AlgoResult, utils::QueueItem},
+    graph::Graph,
+};
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
 use std::{collections::BinaryHeap, sync::Arc, thread, time::Duration};
@@ -8,7 +11,7 @@ pub fn bidirectional_dijkstra(
     from: usize,
     to: usize,
     animate: bool,
-) -> Option<(f64, usize)> {
+) -> AlgoResult {
     let mut dist_f: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
     let mut dist_b: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
     dist_f[from] = OrderedFloat(0.0);
@@ -31,11 +34,14 @@ pub fn bidirectional_dijkstra(
     let mut visited_nodes = 0;
 
     while !que_f.is_empty() && !que_b.is_empty() {
-        // we choose smaller key
         if que_f.peek().unwrap().cost + que_b.peek().unwrap().cost >= best_dist + 10.0 {
-            return Some((*best_dist, visited_nodes));
+            return AlgoResult {
+                distance: Some(*best_dist),
+                visited_nodes,
+            };
         }
 
+        // we choose smaller key
         if que_f.peek().unwrap().cost <= que_b.peek().unwrap().cost {
             let cur = que_f.pop().unwrap();
 
@@ -90,5 +96,9 @@ pub fn bidirectional_dijkstra(
             }
         }
     }
-    None
+
+    AlgoResult {
+        distance: None,
+        visited_nodes,
+    }
 }

@@ -1,9 +1,12 @@
-use crate::{algo::utils::QueueItem, graph::Graph};
+use crate::{
+    algo::{algo_result::AlgoResult, utils::QueueItem},
+    graph::Graph,
+};
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
 use std::{collections::BinaryHeap, sync::Arc, thread, time::Duration};
 
-pub fn dijkstra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Option<(f64, usize)> {
+pub fn dijkstra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> AlgoResult {
     let mut dist: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
 
     let mut que: BinaryHeap<QueueItem> = BinaryHeap::new();
@@ -28,7 +31,10 @@ pub fn dijkstra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Opt
         visited_nodes += 1;
 
         if cur.vertex == to {
-            return Some((dist[to].0, visited_nodes));
+            return AlgoResult {
+                distance: Some(dist[to].0),
+                visited_nodes,
+            };
         }
         for c in &graph.vertices[cur.vertex].connections {
             let alt: QueueItem = QueueItem {
@@ -41,5 +47,9 @@ pub fn dijkstra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Opt
             }
         }
     }
-    None
+
+    AlgoResult {
+        distance: None,
+        visited_nodes,
+    }
 }
