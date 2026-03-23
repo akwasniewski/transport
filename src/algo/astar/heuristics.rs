@@ -13,3 +13,10 @@ pub fn earth_dist(coords1: (f64, f64), coords2: (f64, f64)) -> f64 {
     let tunnel_dist = (x.powi(2) + y.powi(2)).sqrt();
     2.0 * r * (tunnel_dist / 2.0).asin()
 }
+
+pub fn rev<F>(dist_fn: F) -> impl Fn((f64, f64), (f64, f64)) -> f64
+where
+    F: Fn((f64, f64), (f64, f64)) -> f64 + Send + Sync + 'static,
+{
+    move |coords1, coords2| -dist_fn(coords1, coords2)
+}
