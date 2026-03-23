@@ -47,17 +47,5 @@ fn main() {
         bidirectional_astar(graph_arc.clone(), 0, 6000, false, heura.0, heura.1)
     );
 
-    // visualize_algorithm(graph_arc, 0, 6000, dijkstra);
-    // visualize_algorithm(graph_arc, 0, 6000, |g, f, t, a| {
-    //     astar(g, f, t, a, earth_dist)
-    // });
-    // visualize_algorithm(graph_arc, 0, 6000, bidirectional_dijkstra)
-    // visualize_algorithm(graph_arc, 0, 6000, |g, f, t, a| {
-    //     bidirectional_astar(g, f, t, a, earth_dist, rev(earth_dist))
-    // });
-
-    let heura = middle_dist(earth_dist);
-    visualize_algorithm(graph_arc, 0, 6000, |g, f, t, a| {
-        bidirectional_astar(g, f, t, a, heura.0, heura.1)
-    });
+    visualize_algorithm(graph_arc, 0, 7000);
 }
