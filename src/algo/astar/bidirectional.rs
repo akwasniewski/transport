@@ -15,8 +15,8 @@ pub fn bidirectional_astar<F_f, F_b>(
     potential_b: F_b,
 ) -> AlgoResult
 where
-    F_f: Fn((f64, f64), (f64, f64)) -> f64 + Send + Sync + 'static,
-    F_b: Fn((f64, f64), (f64, f64)) -> f64 + Send + Sync + 'static,
+    F_f: Fn((f64, f64), (f64, f64), (f64, f64)) -> f64 + Send + Sync + 'static,
+    F_b: Fn((f64, f64), (f64, f64), (f64, f64)) -> f64 + Send + Sync + 'static,
 {
     let mut dist_f: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
     let mut dist_b: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
@@ -27,13 +27,19 @@ where
     let mut que_b: BinaryHeap<QueueItem> = BinaryHeap::new();
 
     let target_coords = graph.vertices[to].coords;
+    let source_coords = graph.vertices[to].coords;
+
     que_f.push(QueueItem {
         vertex: from,
-        cost: OrderedFloat(0.0 + potential_f(graph.vertices[from].coords, target_coords)),
+        cost: OrderedFloat(
+            0.0 + potential_f(graph.vertices[from].coords, target_coords, source_coords),
+        ),
     });
     que_b.push(QueueItem {
         vertex: to,
-        cost: OrderedFloat(0.0 + potential_b(graph.vertices[to].coords, target_coords)),
+        cost: OrderedFloat(
+            0.0 + potential_b(graph.vertices[to].coords, target_coords, source_coords),
+        ),
     });
 
     let mut best_dist = OrderedFloat(f64::MAX);
@@ -63,7 +69,12 @@ where
                 if alt_cost < dist_f[*c.0] {
                     que_f.push(QueueItem {
                         vertex: *(c.0),
-                        cost: alt_cost + potential_f(graph.vertices[*c.0].coords, target_coords),
+                        cost: alt_cost
+                            + potential_f(
+                                graph.vertices[*c.0].coords,
+                                target_coords,
+                                source_coords,
+                            ),
                     });
                     dist_f[*c.0] = alt_cost;
                 }
@@ -88,7 +99,12 @@ where
                 if alt_cost < dist_b[*c.0] {
                     que_b.push(QueueItem {
                         vertex: *(c.0),
-                        cost: alt_cost + potential_b(graph.vertices[*c.0].coords, target_coords),
+                        cost: alt_cost
+                            + potential_b(
+                                graph.vertices[*c.0].coords,
+                                target_coords,
+                                source_coords,
+                            ),
                     });
                     dist_b[*c.0] = alt_cost;
                 }

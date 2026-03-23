@@ -11,8 +11,9 @@ pub fn astar(
     from: usize,
     to: usize,
     animate: bool,
-    potential: fn((f64, f64), (f64, f64)) -> f64,
+    potential: fn((f64, f64), (f64, f64), (f64, f64)) -> f64,
 ) -> AlgoResult {
+    let source_coords = graph.vertices[from].coords;
     let target_coords = graph.vertices[to].coords;
 
     let mut dist: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
@@ -21,7 +22,9 @@ pub fn astar(
     dist[from] = OrderedFloat(0.0);
     que.push(QueueItem {
         vertex: from,
-        cost: OrderedFloat(0.0 + potential(graph.vertices[from].coords, target_coords)),
+        cost: OrderedFloat(
+            0.0 + potential(graph.vertices[from].coords, target_coords, source_coords),
+        ),
     });
 
     let mut visited_nodes = 0;
@@ -48,7 +51,8 @@ pub fn astar(
             if alt_cost < dist[*c.0] {
                 que.push(QueueItem {
                     vertex: *(c.0),
-                    cost: alt_cost + potential(graph.vertices[*c.0].coords, target_coords),
+                    cost: alt_cost
+                        + potential(graph.vertices[*c.0].coords, target_coords, source_coords),
                 });
                 dist[*c.0] = alt_cost;
             }

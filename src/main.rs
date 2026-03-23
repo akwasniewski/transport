@@ -9,7 +9,7 @@ use crate::{
         astar::{
             astar,
             bidirectional::bidirectional_astar,
-            heuristics::{earth_dist, rev},
+            heuristics::{earth_dist, middle_dist, rev},
         },
         bidirectional_dijkstra::bidirectional_dijkstra,
         dijkstra::dijkstra,
@@ -41,13 +41,23 @@ fn main() {
             rev(earth_dist)
         )
     );
+    let heura = middle_dist(earth_dist);
+    println!(
+        "Bidirectional astar middle: {}",
+        bidirectional_astar(graph_arc.clone(), 0, 6000, false, heura.0, heura.1)
+    );
 
     // visualize_algorithm(graph_arc, 0, 6000, dijkstra);
     // visualize_algorithm(graph_arc, 0, 6000, |g, f, t, a| {
     //     astar(g, f, t, a, earth_dist)
     // });
     // visualize_algorithm(graph_arc, 0, 6000, bidirectional_dijkstra)
+    // visualize_algorithm(graph_arc, 0, 6000, |g, f, t, a| {
+    //     bidirectional_astar(g, f, t, a, earth_dist, rev(earth_dist))
+    // });
+
+    let heura = middle_dist(earth_dist);
     visualize_algorithm(graph_arc, 0, 6000, |g, f, t, a| {
-        bidirectional_astar(g, f, t, a, earth_dist, rev(earth_dist))
+        bidirectional_astar(g, f, t, a, heura.0, heura.1)
     });
 }
