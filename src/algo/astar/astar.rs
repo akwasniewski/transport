@@ -20,17 +20,20 @@ pub fn astar(
 
     let mut que: BinaryHeap<QueueItem> = BinaryHeap::new();
     dist[from] = OrderedFloat(0.0);
-    que.push(QueueItem {
-        vertex: from,
-        cost: OrderedFloat(
-            0.0 + potential(graph.vertices[from].coords, target_coords, source_coords),
-        ),
-    });
+    que.push(QueueItem::with_priority(
+        from,
+        OrderedFloat(0.0 + potential(graph.vertices[from].coords, target_coords, source_coords)),
+        OrderedFloat(0.0),
+    ));
 
     let mut visited_nodes = 0;
 
     while !que.is_empty() {
         let cur = que.pop().unwrap();
+
+        if cur.distance > dist[cur.vertex] {
+            continue;
+        }
 
         if animate && cur.vertex != from && cur.vertex != to {
             graph.vertices[cur.vertex].recolor(Color32::LIGHT_BLUE);
@@ -51,8 +54,9 @@ pub fn astar(
             if alt_cost < dist[*c.0] {
                 que.push(QueueItem {
                     vertex: *(c.0),
-                    cost: alt_cost
+                    priority: alt_cost
                         + potential(graph.vertices[*c.0].coords, target_coords, source_coords),
+                    distance: alt_cost,
                 });
                 dist[*c.0] = alt_cost;
             }
