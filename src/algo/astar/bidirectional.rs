@@ -26,8 +26,8 @@ where
     let mut que_f: BinaryHeap<QueueItem> = BinaryHeap::new();
     let mut que_b: BinaryHeap<QueueItem> = BinaryHeap::new();
 
+    let source_coords = graph.vertices[from].coords;
     let target_coords = graph.vertices[to].coords;
-    let source_coords = graph.vertices[to].coords;
 
     que_f.push(QueueItem {
         vertex: from,
@@ -66,7 +66,7 @@ where
             for c in &graph.vertices[cur.vertex].connections {
                 let alt_cost = c.1 + dist_f[cur.vertex].0;
 
-                if alt_cost < dist_f[*c.0] {
+                if alt_cost < dist_f[*c.0] && dist_b[*c.0] == OrderedFloat(f64::MAX) {
                     que_f.push(QueueItem {
                         vertex: *(c.0),
                         cost: alt_cost
@@ -96,7 +96,7 @@ where
             for c in &graph.vertices[cur.vertex].incoming {
                 let alt_cost = c.1 + dist_b[cur.vertex].0;
 
-                if alt_cost < dist_b[*c.0] {
+                if alt_cost < dist_b[*c.0] && dist_f[*c.0] == OrderedFloat(f64::MAX) {
                     que_b.push(QueueItem {
                         vertex: *(c.0),
                         cost: alt_cost
