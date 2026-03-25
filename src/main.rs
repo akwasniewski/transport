@@ -47,5 +47,5 @@ fn main() {
         bidirectional_astar(graph_arc.clone(), 0, 6000, false, heura.0, heura.1)
     );
 
-    visualize_algorithm(graph_arc, 0, 7000);
+    visualize_algorithm(graph_arc, 0, 6000);
 }

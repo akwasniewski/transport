@@ -11,10 +11,7 @@ pub fn dijkstra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Alg
 
     let mut que: BinaryHeap<QueueItem> = BinaryHeap::new();
     dist[from] = OrderedFloat(0.0);
-    que.push(QueueItem {
-        vertex: from,
-        cost: OrderedFloat(0.0),
-    });
+    que.push(QueueItem::new(from, OrderedFloat(0.0)));
     let mut visited_nodes = 0;
     while !que.is_empty() {
         let cur = que.pop().unwrap();
@@ -24,7 +21,7 @@ pub fn dijkstra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Alg
             thread::sleep(Duration::from_millis(2));
         }
 
-        if cur.cost > dist[cur.vertex] {
+        if cur.distance > dist[cur.vertex] {
             continue;
         }
 
@@ -37,13 +34,10 @@ pub fn dijkstra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Alg
             };
         }
         for c in &graph.vertices[cur.vertex].connections {
-            let alt: QueueItem = QueueItem {
-                vertex: *(c.0),
-                cost: c.1 + cur.cost,
-            };
-            if alt.cost < dist[alt.vertex] {
+            let alt = QueueItem::new(*c.0, c.1 + cur.distance);
+            if alt.distance < dist[alt.vertex] {
                 que.push(alt);
-                dist[alt.vertex] = alt.cost;
+                dist[alt.vertex] = alt.distance;
             }
         }
     }
