@@ -1,5 +1,5 @@
 pub mod algo_result;
+pub mod alt;
 pub mod astar;
-pub mod bidirectional_dijkstra;
 pub mod dijkstra;
 mod utils;
