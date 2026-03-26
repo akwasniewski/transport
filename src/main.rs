@@ -6,13 +6,13 @@ use std::sync::Arc;
 
 use crate::{
     algo::{
+        alt::{alt::alt, landmarks::get_random_landmarks},
         astar::{
             astar,
             bidirectional::bidirectional_astar,
             heuristics::{earth_dist, middle_dist, rev},
         },
-        bidirectional_dijkstra::bidirectional_dijkstra,
-        dijkstra::dijkstra,
+        dijkstra::{bidirectional::bidirectional_dijkstra, dijkstra},
     },
     graph::Graph,
     vis::visualize_algorithm,
@@ -25,6 +25,12 @@ fn main() {
     println!(
         "Astar: {}",
         astar(graph_arc.clone(), 0, 6000, false, earth_dist)
+    );
+
+    let landmarks = get_random_landmarks(graph_arc.clone(), 16);
+    println!(
+        "Alt: {}",
+        alt(graph_arc.clone(), 0, 6000, false, &landmarks)
     );
     println!(
         "Dijkstra: {}",

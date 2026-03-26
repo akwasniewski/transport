@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 eframe = "0.33.3"
 ordered-float = "5.1.0"
+rand = "0.10.0"

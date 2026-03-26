@@ -7,13 +7,16 @@ use std::{
 
 use crate::{
     algo::{
+        alt::{
+            alt::{self, alt},
+            landmarks::get_random_landmarks,
+        },
         astar::{
             astar,
             bidirectional::bidirectional_astar,
             heuristics::{earth_dist, middle_dist, rev},
         },
-        bidirectional_dijkstra::bidirectional_dijkstra,
-        dijkstra::dijkstra,
+        dijkstra::{bidirectional::bidirectional_dijkstra, dijkstra},
     },
     graph::Graph,
 };
@@ -24,6 +27,7 @@ use crate::{
 pub enum AlgoChoice {
     Dijkstra,
     Astar,
+    Alt,
     BidirectionalDijkstra,
     BidirectionalAstar,
     BidirectionalAstarMiddle,
@@ -33,6 +37,7 @@ impl AlgoChoice {
     const ALL: &'static [AlgoChoice] = &[
         AlgoChoice::Dijkstra,
         AlgoChoice::Astar,
+        AlgoChoice::Alt,
         AlgoChoice::BidirectionalDijkstra,
         AlgoChoice::BidirectionalAstar,
         AlgoChoice::BidirectionalAstarMiddle,
@@ -42,6 +47,7 @@ impl AlgoChoice {
         match self {
             AlgoChoice::Dijkstra => "Dijkstra",
             AlgoChoice::Astar => "A*",
+            AlgoChoice::Alt => "Random Alt",
             AlgoChoice::BidirectionalDijkstra => "Bidirectional Dijkstra",
             AlgoChoice::BidirectionalAstar => "Bidirectional A*",
             AlgoChoice::BidirectionalAstarMiddle => "Bidirectional A* (middle)",
@@ -202,10 +208,12 @@ impl VisApp {
         let algo = self.algo;
         let result = self.result.clone();
 
+        let landmarks = get_random_landmarks(graph.clone(), 16);
         thread::spawn(move || {
             let dist = match algo {
                 AlgoChoice::Dijkstra => dijkstra(graph, source, sink, true),
                 AlgoChoice::Astar => astar(graph, source, sink, true, earth_dist),
+                AlgoChoice::Alt => alt(graph, source, sink, true, &landmarks),
                 AlgoChoice::BidirectionalDijkstra => {
                     bidirectional_dijkstra(graph, source, sink, true)
                 }
@@ -463,4 +471,3 @@ impl eframe::App for VisApp {
         ctx.request_repaint();
     }
 }
-
