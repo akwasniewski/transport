@@ -1,16 +1,13 @@
 use eframe::egui;
 use std::{
     collections::HashSet,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, atomic::Ordering},
     thread,
 };
 
 use crate::{
     algo::{
-        alt::{
-            alt::{self, alt},
-            landmarks::get_random_landmarks,
-        },
+        alt::landmarks::alt_potential,
         astar::{
             astar,
             bidirectional::bidirectional_astar,
@@ -89,6 +86,8 @@ pub struct VisApp {
     // result
     result: Arc<Mutex<Option<f64>>>,
     running: bool,
+
+    color_snapshot: Vec<egui::Color32>,
 }
 
 impl VisApp {
@@ -98,6 +97,7 @@ impl VisApp {
         source: usize,
         sink: usize,
     ) -> Self {
+        let color_snapshot = vec![egui::Color32::LIGHT_RED; graph.size];
         Self {
             graph,
             vertex_pos: Vec::new(),
@@ -113,6 +113,7 @@ impl VisApp {
             assigning: Assigning::None,
             result: Arc::new(Mutex::new(None)),
             running: false,
+            color_snapshot,
         }
     }
 
@@ -163,7 +164,7 @@ impl VisApp {
 
         self.edge_cache.clear();
         for vertex in &self.graph.vertices {
-            for (target_label, _) in &vertex.connections {
+            for (target_label, _) in &vertex.edges {
                 if let Some(target) = self
                     .graph
                     .vertices
@@ -199,6 +200,7 @@ impl VisApp {
         for v in &self.graph.vertices {
             v.recolor(egui::Color32::LIGHT_RED);
         }
+        self.color_snapshot = vec![egui::Color32::LIGHT_RED; self.graph.size];
         *self.result.lock().unwrap() = None;
         self.running = true;
 
@@ -208,21 +210,20 @@ impl VisApp {
         let algo = self.algo;
         let result = self.result.clone();
 
-        let landmarks = get_random_landmarks(graph.clone(), 16);
         thread::spawn(move || {
             let dist = match algo {
-                AlgoChoice::Dijkstra => dijkstra(graph, source, sink, true),
-                AlgoChoice::Astar => astar(graph, source, sink, true, earth_dist),
-                AlgoChoice::Alt => alt(graph, source, sink, true, &landmarks),
+                AlgoChoice::Dijkstra => dijkstra(&graph, source, sink, true),
+                AlgoChoice::Astar => astar(&graph, source, sink, true, earth_dist),
+                AlgoChoice::Alt => astar(&graph, source, sink, true, alt_potential),
                 AlgoChoice::BidirectionalDijkstra => {
-                    bidirectional_dijkstra(graph, source, sink, true)
+                    bidirectional_dijkstra(&graph, source, sink, true)
                 }
                 AlgoChoice::BidirectionalAstar => {
-                    bidirectional_astar(graph, source, sink, true, earth_dist, rev(earth_dist))
+                    bidirectional_astar(&graph, source, sink, true, earth_dist, rev(earth_dist))
                 }
                 AlgoChoice::BidirectionalAstarMiddle => {
                     let heura = middle_dist(earth_dist);
-                    bidirectional_astar(graph, source, sink, true, heura.0, heura.1)
+                    bidirectional_astar(&graph, source, sink, true, heura.0, heura.1)
                 }
             };
             *result.lock().unwrap() = dist.distance;
@@ -234,6 +235,12 @@ impl VisApp {
 
 impl eframe::App for VisApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if self.running {
+            for (i, v) in self.graph.vertices.iter().enumerate() {
+                let [r, g, b, a] = v.color.load(Ordering::Relaxed).to_be_bytes();
+                self.color_snapshot[i] = egui::Color32::from_rgba_premultiplied(r, g, b, a);
+            }
+        }
         // ── Side panel ────────────────────────────────────────────────────────
         egui::SidePanel::left("controls")
             .min_width(230.0)
@@ -379,14 +386,6 @@ impl eframe::App for VisApp {
                 ui.add_space(6.0);
 
                 // Count vertices that have been visited (color != LIGHT_RED).
-                let visited_count = self
-                    .graph
-                    .vertices
-                    .iter()
-                    .filter(|v| *v.color.lock().unwrap() != egui::Color32::LIGHT_RED)
-                    .count();
-                ui.label(format!("Vertices visited: {}", visited_count));
-                ui.label(format!("Total vertices:   {}", self.graph.size));
             });
 
         // ── Main canvas ───────────────────────────────────────────────────────
@@ -462,7 +461,11 @@ impl eframe::App for VisApp {
                     painter.circle_stroke(screen_pos, r + 4.0, egui::Stroke::new(2.0, color));
                     painter.circle_filled(screen_pos, r, color);
                 } else {
-                    let cur_color = *self.graph.vertices[i].color.lock().unwrap();
+                    let cur_color = self
+                        .color_snapshot
+                        .get(i)
+                        .copied()
+                        .unwrap_or(egui::Color32::LIGHT_RED);
                     painter.circle_filled(screen_pos, base_r, cur_color);
                 }
             }

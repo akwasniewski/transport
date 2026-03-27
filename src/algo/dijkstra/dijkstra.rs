@@ -4,9 +4,9 @@ use crate::{
 };
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
-use std::{collections::BinaryHeap, sync::Arc, thread, time::Duration};
+use std::{collections::BinaryHeap, thread};
 
-pub fn dijkstra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> AlgoResult {
+pub fn dijkstra(graph: &Graph, from: usize, to: usize, animate: bool) -> AlgoResult {
     let mut dist: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
 
     let mut que: BinaryHeap<QueueItem> = BinaryHeap::new();
@@ -18,7 +18,7 @@ pub fn dijkstra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Alg
 
         if animate && cur.vertex != from && cur.vertex != to {
             graph.vertices[cur.vertex].recolor(Color32::LIGHT_BLUE);
-            thread::sleep(Duration::from_millis(2));
+            thread::sleep(std::time::Duration::from_millis(10));
         }
 
         if cur.distance > dist[cur.vertex] {
@@ -33,7 +33,7 @@ pub fn dijkstra(graph: Arc<Graph>, from: usize, to: usize, animate: bool) -> Alg
                 visited_nodes,
             };
         }
-        for c in &graph.vertices[cur.vertex].connections {
+        for c in &graph.vertices[cur.vertex].edges {
             let alt = QueueItem::new(*c.0, c.1 + cur.distance);
             if alt.distance < dist[alt.vertex] {
                 que.push(alt);

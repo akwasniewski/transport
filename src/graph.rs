@@ -1,51 +1,70 @@
 use eframe::egui;
 use ordered_float::OrderedFloat;
-use std::{collections::HashMap, fs, sync::Mutex};
+use std::{
+    collections::HashMap,
+    fs,
+    sync::atomic::{AtomicU32, Ordering},
+};
+
+#[derive(Debug)]
+pub struct LandmarkData {
+    pub to: Vec<OrderedFloat<f64>>,
+    pub from: Vec<OrderedFloat<f64>>,
+}
+
 #[derive(Debug)]
 pub struct Vertex {
     pub(crate) label: usize,
-    pub(crate) connections: HashMap<usize, OrderedFloat<f64>>,
-    pub(crate) incoming: HashMap<usize, OrderedFloat<f64>>,
+    pub(crate) edges: HashMap<usize, OrderedFloat<f64>>,
+    pub(crate) edges_rev: HashMap<usize, OrderedFloat<f64>>,
     pub(crate) coords: (f64, f64),
-    pub(crate) color: Mutex<egui::Color32>,
+    pub(crate) color: AtomicU32,
 }
+
 impl Vertex {
     pub fn new(label: usize) -> Self {
-        let connections: HashMap<usize, OrderedFloat<f64>> = HashMap::new();
+        let init_color = u32::from_be_bytes(egui::Color32::LIGHT_RED.to_array());
         Self {
             label,
-            connections,
-            incoming: HashMap::new(),
+            edges: HashMap::new(),
+            edges_rev: HashMap::new(),
             coords: (0.0, 0.0),
-            color: Mutex::new(egui::Color32::LIGHT_RED),
+            color: AtomicU32::new(init_color),
         }
     }
     pub fn set_coords(&mut self, lat: f64, lon: f64) {
         self.coords = (lat, lon);
     }
     pub fn recolor(&self, new_color: egui::Color32) {
-        let mut color = self.color.lock().unwrap();
-        *color = new_color;
+        self.color
+            .store(u32::from_be_bytes(new_color.to_array()), Ordering::Relaxed);
     }
 }
+
 #[derive(Debug)]
 pub struct Graph {
     pub size: usize,
     pub vertices: Vec<Vertex>,
+    pub(crate) landmarks: HashMap<usize, LandmarkData>,
 }
+
 impl Graph {
     pub fn new(size: usize) -> Self {
         let mut vertices = Vec::new();
         for i in 0..size {
             vertices.push(Vertex::new(i));
         }
-        Self { size, vertices }
+        Self {
+            size,
+            vertices,
+            landmarks: HashMap::new(),
+        }
     }
     pub fn add_edge(&mut self, from: usize, to: usize, travel_time: OrderedFloat<f64>) {
-        self.vertices[from].connections.insert(to, travel_time);
+        self.vertices[from].edges.insert(to, travel_time);
     }
     pub fn add_reverse_edges(&mut self, from: usize, to: usize, travel_time: OrderedFloat<f64>) {
-        self.vertices[from].incoming.insert(to, travel_time);
+        self.vertices[from].edges_rev.insert(to, travel_time);
     }
     pub fn from_snap(snap: &str) -> Self {
         let mut res = Graph::new(9765);

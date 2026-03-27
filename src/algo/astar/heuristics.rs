@@ -1,11 +1,12 @@
-pub fn earth_dist(
-    coords: (f64, f64),
-    target_coords: (f64, f64),
-    _source_coords: (f64, f64),
-) -> f64 {
+use crate::graph::Graph;
+
+pub fn earth_dist(graph: &Graph, cur: usize, _from: usize, to: usize) -> f64 {
     let r = 6371009.0; // earth's radius
 
-    let coords = (coords.0.to_radians(), coords.1.to_radians());
+    let cur_coords = graph.vertices[cur].coords;
+    let target_coords = graph.vertices[to].coords;
+
+    let coords = (cur_coords.0.to_radians(), cur_coords.1.to_radians());
     let target_coords = (target_coords.0.to_radians(), target_coords.1.to_radians());
 
     let delta_lat = coords.0 - target_coords.0;
@@ -18,33 +19,27 @@ pub fn earth_dist(
     2.0 * r * (tunnel_dist / 2.0).asin()
 }
 
-pub fn rev<F>(dist_fn: F) -> impl Fn((f64, f64), (f64, f64), (f64, f64)) -> f64
+pub fn rev<F>(potential: F) -> impl Fn(&Graph, usize, usize, usize) -> f64
 where
-    F: Fn((f64, f64), (f64, f64), (f64, f64)) -> f64 + Send + Sync + 'static,
+    F: Fn(&Graph, usize, usize, usize) -> f64 + Send + Sync + 'static,
 {
-    move |coords, target_coords, source_coords| -dist_fn(coords, target_coords, source_coords)
+    move |graph, cur, from, to| -potential(graph, cur, from, to)
 }
 
 pub fn middle_dist<F>(
     dist_fn: F,
 ) -> (
-    impl Fn((f64, f64), (f64, f64), (f64, f64)) -> f64,
-    impl Fn((f64, f64), (f64, f64), (f64, f64)) -> f64,
+    Box<dyn for<'a> Fn(&'a Graph, usize, usize, usize) -> f64 + Send + Sync>,
+    Box<dyn for<'a> Fn(&'a Graph, usize, usize, usize) -> f64 + Send + Sync>,
 )
 where
-    F: Fn((f64, f64), (f64, f64), (f64, f64)) -> f64 + Send + Sync + Copy + 'static,
+    F: for<'a> Fn(&'a Graph, usize, usize, usize) -> f64 + Send + Sync + Copy + 'static,
 {
-    let forward = move |coords, target_coords, source_coords| {
-        (dist_fn(coords, target_coords, source_coords)
-            - dist_fn(source_coords, target_coords, source_coords))
-            / 2.0
+    let forward = move |graph: &Graph, cur: usize, from: usize, to: usize| {
+        (dist_fn(graph, cur, from, to) - dist_fn(graph, from, from, to)) / 2.0
     };
-
-    let backward = move |coords, target_coords, source_coords| {
-        (dist_fn(target_coords, target_coords, source_coords)
-            - dist_fn(coords, target_coords, source_coords))
-            / 2.0
+    let backward = move |graph: &Graph, cur: usize, from: usize, to: usize| {
+        (dist_fn(graph, to, from, to) - dist_fn(graph, cur, from, to)) / 2.0
     };
-
-    (forward, backward)
+    (Box::new(forward), Box::new(backward))
 }
