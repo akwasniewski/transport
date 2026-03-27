@@ -4,14 +4,9 @@ use crate::{
 };
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
-use std::{collections::BinaryHeap, sync::Arc, thread, time::Duration};
+use std::{collections::BinaryHeap, thread};
 
-pub fn bidirectional_dijkstra(
-    graph: Arc<Graph>,
-    from: usize,
-    to: usize,
-    animate: bool,
-) -> AlgoResult {
+pub fn bidirectional_dijkstra(graph: &Graph, from: usize, to: usize, animate: bool) -> AlgoResult {
     let mut dist_f: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
     let mut dist_b: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
     dist_f[from] = OrderedFloat(0.0);
@@ -48,9 +43,10 @@ pub fn bidirectional_dijkstra(
 
             if animate && cur.vertex != from && cur.vertex != to {
                 graph.vertices[cur.vertex].recolor(Color32::LIGHT_BLUE);
-                thread::sleep(Duration::from_millis(2));
+                thread::sleep(std::time::Duration::from_millis(10));
             }
-            for c in &graph.vertices[cur.vertex].connections {
+
+            for c in &graph.vertices[cur.vertex].edges {
                 let alt: QueueItem = QueueItem::new(*c.0, c.1 + cur.distance);
                 if alt.distance < dist_f[alt.vertex] {
                     que_f.push(alt);
@@ -71,9 +67,8 @@ pub fn bidirectional_dijkstra(
 
             if animate && cur.vertex != from && cur.vertex != to {
                 graph.vertices[cur.vertex].recolor(Color32::LIGHT_BLUE);
-                thread::sleep(Duration::from_millis(2));
             }
-            for c in &graph.vertices[cur.vertex].incoming {
+            for c in &graph.vertices[cur.vertex].edges_rev {
                 let alt: QueueItem = QueueItem::new(*c.0, c.1 + cur.distance);
                 if alt.distance < dist_b[alt.vertex] {
                     que_b.push(alt);

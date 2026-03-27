@@ -4,43 +4,37 @@ use crate::{
 };
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
-use std::{collections::BinaryHeap, sync::Arc, thread, time::Duration};
+use std::{collections::BinaryHeap, thread, time::Duration};
 
-pub fn bidirectional_astar<F_f, F_b>(
-    graph: Arc<Graph>,
+pub fn bidirectional_astar<Ff, Fb>(
+    graph: &Graph,
     from: usize,
     to: usize,
     animate: bool,
-    potential_f: F_f,
-    potential_b: F_b,
+    potential_f: Ff,
+    potential_b: Fb,
 ) -> AlgoResult
 where
-    F_f: Fn((f64, f64), (f64, f64), (f64, f64)) -> f64 + Send + Sync + 'static,
-    F_b: Fn((f64, f64), (f64, f64), (f64, f64)) -> f64 + Send + Sync + 'static,
+    Ff: Fn(&Graph, usize, usize, usize) -> f64 + Send + Sync + 'static,
+    Fb: Fn(&Graph, usize, usize, usize) -> f64 + Send + Sync + 'static,
 {
     let mut dist_f: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
     let mut dist_b: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
+
     dist_f[from] = OrderedFloat(0.0);
     dist_b[to] = OrderedFloat(0.0);
 
     let mut que_f: BinaryHeap<QueueItem> = BinaryHeap::new();
     let mut que_b: BinaryHeap<QueueItem> = BinaryHeap::new();
 
-    let source_coords = graph.vertices[from].coords;
-    let target_coords = graph.vertices[to].coords;
-
     que_f.push(QueueItem {
         vertex: from,
-        priority: OrderedFloat(
-            0.0 + potential_f(graph.vertices[from].coords, target_coords, source_coords),
-        ),
+        priority: OrderedFloat(0.0 + potential_f(graph, from, from, to)),
         distance: OrderedFloat(0.0),
     });
     que_b.push(QueueItem {
         vertex: to,
-        priority: OrderedFloat(
-            0.0 + potential_b(graph.vertices[to].coords, target_coords, source_coords),
-        ),
+        priority: OrderedFloat(0.0 + potential_b(graph, to, from, to)),
         distance: OrderedFloat(0.0),
     });
 
@@ -67,20 +61,16 @@ where
 
             if animate && cur.vertex != from && cur.vertex != to {
                 graph.vertices[cur.vertex].recolor(Color32::LIGHT_BLUE);
-                thread::sleep(Duration::from_millis(2));
+                thread::sleep(std::time::Duration::from_millis(10));
             }
-            for c in &graph.vertices[cur.vertex].connections {
+
+            for c in &graph.vertices[cur.vertex].edges {
                 let alt_cost = c.1 + dist_f[cur.vertex].0;
 
                 if alt_cost < dist_f[*c.0] && dist_b[*c.0] == OrderedFloat(f64::MAX) {
                     que_f.push(QueueItem::with_priority(
                         *(c.0),
-                        alt_cost
-                            + potential_f(
-                                graph.vertices[*c.0].coords,
-                                target_coords,
-                                source_coords,
-                            ),
+                        alt_cost + potential_f(graph, *c.0, from, to),
                         alt_cost,
                     ));
                     dist_f[*c.0] = alt_cost;
@@ -104,18 +94,13 @@ where
                 thread::sleep(Duration::from_millis(2));
             }
 
-            for c in &graph.vertices[cur.vertex].incoming {
+            for c in &graph.vertices[cur.vertex].edges_rev {
                 let alt_cost = c.1 + dist_b[cur.vertex].0;
 
                 if alt_cost < dist_b[*c.0] && dist_f[*c.0] == OrderedFloat(f64::MAX) {
                     que_b.push(QueueItem::with_priority(
                         *(c.0),
-                        alt_cost
-                            + potential_b(
-                                graph.vertices[*c.0].coords,
-                                target_coords,
-                                source_coords,
-                            ),
+                        alt_cost + potential_b(graph, *c.0, from, to),
                         alt_cost,
                     ));
                     dist_b[*c.0] = alt_cost;

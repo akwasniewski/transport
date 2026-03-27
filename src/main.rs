@@ -2,11 +2,9 @@ mod algo;
 mod graph;
 mod vis;
 
-use std::sync::Arc;
-
 use crate::{
     algo::{
-        alt::{alt::alt, landmarks::get_random_landmarks},
+        alt::landmarks::alt_potential,
         astar::{
             astar,
             bidirectional::bidirectional_astar,
@@ -19,39 +17,26 @@ use crate::{
 };
 
 fn main() {
-    let graph = Graph::from_files("graphs/krakow_snap.txt", "graphs/krakow_coords.txt");
-    let graph_arc = Arc::new(graph);
-    println!("Dijkstra: {}", dijkstra(graph_arc.clone(), 0, 6000, false));
-    println!(
-        "Astar: {}",
-        astar(graph_arc.clone(), 0, 6000, false, earth_dist)
-    );
+    let mut graph = Graph::from_files("graphs/krakow_snap.txt", "graphs/krakow_coords.txt");
+    println!("Dijkstra: {}", dijkstra(&graph, 0, 6000, false));
+    println!("Astar: {}", astar(&graph, 0, 6000, false, earth_dist));
 
-    let landmarks = get_random_landmarks(graph_arc.clone(), 16);
-    println!(
-        "Alt: {}",
-        alt(graph_arc.clone(), 0, 6000, false, &landmarks)
-    );
+    graph.get_random_landmarks(16);
+
+    println!("Alt: {}", astar(&graph, 0, 6000, false, alt_potential));
     println!(
         "Dijkstra: {}",
-        bidirectional_dijkstra(graph_arc.clone(), 0, 6000, false)
+        bidirectional_dijkstra(&graph, 0, 6000, false)
     );
     println!(
         "Bidirectional astar: {}",
-        bidirectional_astar(
-            graph_arc.clone(),
-            0,
-            6000,
-            false,
-            earth_dist,
-            rev(earth_dist)
-        )
+        bidirectional_astar(&graph, 0, 6000, false, earth_dist, rev(earth_dist))
     );
     let heura = middle_dist(earth_dist);
     println!(
         "Bidirectional astar middle: {}",
-        bidirectional_astar(graph_arc.clone(), 0, 6000, false, heura.0, heura.1)
+        bidirectional_astar(&graph, 0, 6000, false, heura.0, heura.1)
     );
 
-    visualize_algorithm(graph_arc, 0, 6000);
+    visualize_algorithm(graph, 0, 6000);
 }
