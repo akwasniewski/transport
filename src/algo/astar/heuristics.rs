@@ -6,12 +6,9 @@ pub fn earth_dist(graph: &Graph, cur: usize, _from: usize, to: usize) -> f64 {
     let cur_coords = graph.vertices[cur].coords;
     let target_coords = graph.vertices[to].coords;
 
-    let coords = (cur_coords.0.to_radians(), cur_coords.1.to_radians());
-    let target_coords = (target_coords.0.to_radians(), target_coords.1.to_radians());
-
-    let delta_lat = coords.0 - target_coords.0;
-    let mid_lat = (coords.0 + target_coords.0) / 2.0;
-    let delta_long = coords.1 - target_coords.1;
+    let delta_lat = cur_coords.0 - target_coords.0;
+    let mid_lat = (cur_coords.0 + target_coords.0) / 2.0;
+    let delta_long = cur_coords.1 - target_coords.1;
 
     let x = delta_lat;
     let y = mid_lat.cos() * delta_long;

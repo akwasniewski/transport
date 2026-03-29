@@ -99,8 +99,8 @@ impl Graph {
                 panic!("Expected 3 values per line, got {}", parts.len());
             }
             let id: usize = parts[0].parse().expect("Failed to parse vertex id");
-            let lat: f64 = parts[1].parse().expect("Failed to parse latitude");
-            let lon: f64 = parts[2].parse().expect("Failed to parse longitude");
+            let lat: f64 = parts[1].parse::<f64>().expect("Failed to parse latitude").to_radians();
+            let lon: f64 = parts[2].parse::<f64>().expect("Failed to parse longitude").to_radians();
             self.vertices[id].set_coords(lat, lon);
         }
     }
