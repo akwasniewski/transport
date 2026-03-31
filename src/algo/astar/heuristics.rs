@@ -4,7 +4,9 @@ pub fn earth_dist(graph: &Graph, cur: usize, _from: usize, to: usize) -> f64 {
     let r = 6371009.0; // earth's radius
 
     let cur_coords = graph.vertices[cur].coords;
+    let cur_coords = (cur_coords.0.to_radians(), cur_coords.1.to_radians());
     let target_coords = graph.vertices[to].coords;
+    let target_coords = (target_coords.0.to_radians(), target_coords.1.to_radians());
 
     let delta_lat = cur_coords.0 - target_coords.0;
     let mid_lat = (cur_coords.0 + target_coords.0) / 2.0;
