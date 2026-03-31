@@ -46,6 +46,7 @@ pub struct Graph {
     pub size: usize,
     pub vertices: Vec<Vertex>,
     pub(crate) landmarks: HashMap<usize, LandmarkData>,
+    pub(crate) regions: Option<Vec<usize>>,
 }
 
 impl Graph {
@@ -58,6 +59,7 @@ impl Graph {
             size,
             vertices,
             landmarks: HashMap::new(),
+            regions: None
         }
     }
     pub fn add_edge(&mut self, from: usize, to: usize, travel_time: OrderedFloat<f64>) {
@@ -99,8 +101,8 @@ impl Graph {
                 panic!("Expected 3 values per line, got {}", parts.len());
             }
             let id: usize = parts[0].parse().expect("Failed to parse vertex id");
-            let lat: f64 = parts[1].parse::<f64>().expect("Failed to parse latitude").to_radians();
-            let lon: f64 = parts[2].parse::<f64>().expect("Failed to parse longitude").to_radians();
+            let lat: f64 = parts[1].parse::<f64>().expect("Failed to parse latitude");
+            let lon: f64 = parts[2].parse::<f64>().expect("Failed to parse longitude");
             self.vertices[id].set_coords(lat, lon);
         }
     }

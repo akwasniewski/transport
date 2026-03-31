@@ -38,5 +38,8 @@ fn main() {
         bidirectional_astar(&graph, 0, 6000, false, heura.0, heura.1)
     );
 
+    graph.divide_into_regions(4);
     visualize_algorithm(graph, 0, 6000);
+
+    // println!{"{:?}",graph.regions}
 }
