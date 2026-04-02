@@ -47,6 +47,7 @@ pub struct Graph {
     pub vertices: Vec<Vertex>,
     pub(crate) landmarks: HashMap<usize, LandmarkData>,
     pub(crate) regions: Option<Vec<usize>>,
+    pub(crate) edge_region_flags: Option<Vec<HashMap<usize, Vec<bool>>>>,
 }
 
 impl Graph {
@@ -59,7 +60,8 @@ impl Graph {
             size,
             vertices,
             landmarks: HashMap::new(),
-            regions: None
+            regions: None,
+            edge_region_flags: None
         }
     }
     pub fn add_edge(&mut self, from: usize, to: usize, travel_time: OrderedFloat<f64>) {
