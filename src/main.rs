@@ -4,16 +4,13 @@ mod vis;
 
 use crate::{
     algo::{
-        alt::landmarks::alt_potential,
-        astar::{
+        alt::landmarks::alt_potential, arc_flags::arc_flags::arc_flags, astar::{
             astar,
             bidirectional::bidirectional_astar,
             heuristics::{earth_dist, middle_dist, rev},
-        },
-        dijkstra::{bidirectional::bidirectional_dijkstra, dijkstra},
+        }, dijkstra::{bidirectional::bidirectional_dijkstra, dijkstra}
     },
-    graph::Graph,
-    vis::visualize_algorithm,
+    graph::Graph, vis::visualize_algorithm,
 };
 
 fn main() {
@@ -39,6 +36,10 @@ fn main() {
     );
 
     graph.divide_into_regions(4);
+    graph.preprocess_region_edges(16);
+
+    println!("Arc flags: {}", arc_flags(&graph, 0, 6000, false, earth_dist));
+    println!("Arc flags alt: {}", arc_flags(&graph, 0, 6000, false, alt_potential));
     visualize_algorithm(graph, 0, 6000);
 
     // println!{"{:?}",graph.regions}
