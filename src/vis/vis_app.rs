@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     algo::{
-        alt::landmarks::alt_potential, arc_flags::arc_flags::arc_flags, astar::{
+        alt::landmarks::alt_potential, arc_flags::arc_flags::arc_flags, arc_flags::bidirecional::bidirectional_arcflags, astar::{
             astar,
             bidirectional::bidirectional_astar,
             heuristics::{earth_dist, middle_dist, rev},
@@ -27,7 +27,8 @@ pub enum AlgoChoice {
     BidirectionalAstar,
     BidirectionalAstarMiddle,
     ArcFlags,
-    ArcFlagsAlt
+    ArcFlagsAlt,
+    BidirectionalArcFlags,
 }
 
 impl AlgoChoice {
@@ -39,7 +40,8 @@ impl AlgoChoice {
         AlgoChoice::BidirectionalAstar,
         AlgoChoice::BidirectionalAstarMiddle,
         AlgoChoice::ArcFlags,
-        AlgoChoice::ArcFlagsAlt
+        AlgoChoice::ArcFlagsAlt,
+        AlgoChoice::BidirectionalArcFlags
     ];
 
     fn label(self) -> &'static str {
@@ -52,6 +54,7 @@ impl AlgoChoice {
             AlgoChoice::BidirectionalAstarMiddle => "Bidirectional A* (middle)",
             AlgoChoice::ArcFlags => "Arc flags",
             AlgoChoice::ArcFlagsAlt => "Arc flags with random alt potential",
+            AlgoChoice::BidirectionalArcFlags => "Bidirectional arc flags",
         }
     }
 }
@@ -234,6 +237,9 @@ impl VisApp {
                 }
                 AlgoChoice::ArcFlagsAlt => {
                     arc_flags(&graph, source, sink, true, alt_potential)
+                }
+                AlgoChoice::BidirectionalArcFlags => {
+                    bidirectional_arcflags(&graph, source, sink, true, earth_dist, rev(earth_dist))
                 }
             };
             *result.lock().unwrap() = dist.distance;
@@ -449,7 +455,7 @@ impl eframe::App for VisApp {
             for (p1, p2) in &self.edge_cache {
                 painter.line_segment(
                     [*p1 + offset, *p2 + offset],
-                    egui::Stroke::new(1.0, egui::Color32::LIGHT_BLUE),
+                    egui::Stroke::new(1.0, egui::Color32::LIGHT_GRAY),
                 );
             }
 

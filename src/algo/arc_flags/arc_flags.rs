@@ -52,7 +52,7 @@ pub fn arc_flags(
         }
 
         for c in &graph.vertices[cur.vertex].edges {
-            if !edge_region_flags[cur.vertex].get(c.0).unwrap()[to_region] && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
+            if !edge_region_flags[cur.vertex].get(c.0).unwrap()[regions[to]] && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
                 continue;
             } 
             let alt_cost = c.1 + dist[cur.vertex].0;
