@@ -73,8 +73,18 @@ impl Graph {
         self.vertices[from].edges_rev.insert(to, travel_time);
     }
     pub fn from_snap(snap: &str) -> Self {
-        let mut res = Graph::new(9765);
-        for line in snap.lines() {
+        let mut lines = snap.lines();
+
+        let n: usize = lines
+            .next()
+            .expect("snap file is empty")
+            .trim()
+            .parse()
+            .expect("Failed to parse vertex count");
+
+        let mut res = Graph::new(n);
+
+        for line in lines {
             let line = line.trim();
             if line.is_empty() {
                 continue;

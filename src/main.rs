@@ -14,7 +14,7 @@ use crate::{
 };
 
 fn main() {
-    let mut graph = Graph::from_files("graphs/polska_snap.txt", "graphs/polska_coords.txt");
+    let mut graph = Graph::from_files("graphs/krakow_snap.txt", "graphs/krakow_coords.txt");
     println!("graph parsed");
     println!("Dijkstra: {}", dijkstra(&graph, 0, 6000, false));
     println!("Astar: {}", astar(&graph, 0, 6000, false, earth_dist));
