@@ -1,7 +1,7 @@
-use std::{collections::HashMap, hash::Hash};
+use std::{collections::HashMap};
 
-use eframe::egui::Order;
 use ordered_float::OrderedFloat;
+use crate::algo::dijkstra::distance_to_all::EdgeDir; 
 
 use crate::graph::{Graph, LandmarkData};
 impl Graph {
@@ -15,13 +15,7 @@ impl Graph {
                 continue;
             }
 
-        self.landmarks.insert(
-                cur,
-                LandmarkData {
-                    to: self.distance_to_all(cur),
-                    from: self.distance_to_all_rev(cur),
-                },
-            );
+            self.get_landmark_data(cur);
             i += 1;
         }
     }
@@ -49,8 +43,8 @@ impl Graph {
         self.landmarks.insert(
                 vertex,
                 LandmarkData {
-                    from: self.distance_to_all(vertex),
-                    to: self.distance_to_all_rev(vertex),
+                    from: self.distance_to_all(vertex, EdgeDir::Forward),
+                    to: self.distance_to_all(vertex, EdgeDir::Reverse),
                 },
             );
     }

@@ -1,56 +1,38 @@
-use crate::{algo::utils::QueueItem, graph::Graph};
+use std::collections::BTreeSet;
 use ordered_float::OrderedFloat;
-use std::collections::BinaryHeap;
+use crate::graph::Graph;
 
 impl Graph {
-    pub fn distance_to_all(&self, from: usize) -> Vec<OrderedFloat<f64>> {
-        let mut dist: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); self.size];
+    pub fn distance_to_all(&self, from: usize, dir: EdgeDir) -> Vec<OrderedFloat<f64>> {
+        let mut dist = vec![OrderedFloat(f64::MAX); self.size];
+        let mut que: BTreeSet<(OrderedFloat<f64>, usize)> = BTreeSet::new();
 
-        let mut que: BinaryHeap<QueueItem> = BinaryHeap::new();
         dist[from] = OrderedFloat(0.0);
-        que.push(QueueItem::new(from, OrderedFloat(0.0)));
-        while !que.is_empty() {
-            let cur = que.pop().unwrap();
+        que.insert((OrderedFloat(0.0), from));
 
-            if cur.distance > dist[cur.vertex] {
-                continue;
-            }
+        while let Some(&(cur_dist, cur)) = que.iter().next() {
+            que.remove(&(cur_dist, cur));
 
-            for c in &self.vertices[cur.vertex].edges {
-                let alt = QueueItem::new(*c.0, c.1 + cur.distance);
-                if alt.distance < dist[alt.vertex] {
-                    que.push(alt);
-                    dist[alt.vertex] = alt.distance;
+            let edges = match dir {
+                EdgeDir::Forward  => &self.vertices[cur].edges,
+                EdgeDir::Reverse  => &self.vertices[cur].edges_rev,
+            };
+
+            for (&neighbour, &edge_dist) in edges {
+                let new_dist = edge_dist + cur_dist;
+                if new_dist < dist[neighbour] {
+                    que.remove(&(dist[neighbour], neighbour));
+                    dist[neighbour] = new_dist;
+                    que.insert((new_dist, neighbour));
                 }
             }
         }
 
         dist
     }
+}
 
-    //TODO : unify it to one function
-    pub fn distance_to_all_rev(&self, from: usize) -> Vec<OrderedFloat<f64>> {
-        let mut dist: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); self.size];
-
-        let mut que: BinaryHeap<QueueItem> = BinaryHeap::new();
-        dist[from] = OrderedFloat(0.0);
-        que.push(QueueItem::new(from, OrderedFloat(0.0)));
-        while !que.is_empty() {
-            let cur = que.pop().unwrap();
-
-            if cur.distance > dist[cur.vertex] {
-                continue;
-            }
-
-            for c in &self.vertices[cur.vertex].edges_rev {
-                let alt = QueueItem::new(*c.0, c.1 + cur.distance);
-                if alt.distance < dist[alt.vertex] {
-                    que.push(alt);
-                    dist[alt.vertex] = alt.distance;
-                }
-            }
-        }
-
-        dist
-    }
+pub enum EdgeDir {
+    Forward,
+    Reverse,
 }
