@@ -5,24 +5,26 @@ use std::{
     fs,
     sync::atomic::{AtomicU32, Ordering},
 };
+use std::ops::{Index, IndexMut};
+use crate::utility::IndexVec;
 
 #[derive(Debug)]
 pub struct LandmarkData {
-    pub to: Vec<OrderedFloat<f64>>,
-    pub from: Vec<OrderedFloat<f64>>,
+    pub to: IndexVec<OrderedFloat<f32>>,
+    pub from: IndexVec<OrderedFloat<f32>>,
 }
 
 #[derive(Debug)]
 pub struct Vertex {
-    pub(crate) label: usize,
-    pub(crate) edges: HashMap<usize, OrderedFloat<f64>>,
-    pub(crate) edges_rev: HashMap<usize, OrderedFloat<f64>>,
-    pub(crate) coords: (f64, f64),
+    pub(crate) label: u32,
+    pub(crate) edges: HashMap<u32, OrderedFloat<f32>>,
+    pub(crate) edges_rev: HashMap<u32, OrderedFloat<f32>>,
+    pub(crate) coords: (f32, f32),
     pub(crate) color: AtomicU32,
 }
 
 impl Vertex {
-    pub fn new(label: usize) -> Self {
+    pub fn new(label: u32) -> Self {
         let init_color = u32::from_be_bytes(egui::Color32::LIGHT_RED.to_array());
         Self {
             label,
@@ -32,7 +34,7 @@ impl Vertex {
             color: AtomicU32::new(init_color),
         }
     }
-    pub fn set_coords(&mut self, lat: f64, lon: f64) {
+    pub fn set_coords(&mut self, lat: f32, lon: f32) {
         self.coords = (lat, lon);
     }
     pub fn recolor(&self, new_color: egui::Color32) {
@@ -45,17 +47,17 @@ impl Vertex {
 pub struct Graph {
     pub size: usize,
     pub vertices: Vec<Vertex>,
-    pub(crate) landmarks: HashMap<usize, LandmarkData>,
-    pub(crate) regions: Option<Vec<usize>>,
-    pub(crate) edge_region_flags: Option<Vec<HashMap<usize, Vec<bool>>>>,
-    pub(crate) edge_region_flags_rev: Option<Vec<HashMap<usize, Vec<bool>>>>,
+    pub(crate) landmarks: HashMap<u32, LandmarkData>,
+    pub(crate) regions: Option<IndexVec<u32>>,
+    pub(crate) edge_region_flags: Option<IndexVec<HashMap<u32, IndexVec<bool>>>>,
+    pub(crate) edge_region_flags_rev: Option<IndexVec<HashMap<u32, IndexVec<bool>>>>,
 }
 
 impl Graph {
     pub fn new(size: usize) -> Self {
         let mut vertices = Vec::new();
         for i in 0..size {
-            vertices.push(Vertex::new(i));
+            vertices.push(Vertex::new(i as u32));
         }
         Self {
             size,
@@ -66,11 +68,11 @@ impl Graph {
             edge_region_flags_rev: None
         }
     }
-    pub fn add_edge(&mut self, from: usize, to: usize, travel_time: OrderedFloat<f64>) {
-        self.vertices[from].edges.insert(to, travel_time);
+    pub fn add_edge(&mut self, from: u32, to: u32, travel_time: OrderedFloat<f32>) {
+        self[from].edges.insert(to, travel_time);
     }
-    pub fn add_reverse_edges(&mut self, from: usize, to: usize, travel_time: OrderedFloat<f64>) {
-        self.vertices[from].edges_rev.insert(to, travel_time);
+    pub fn add_reverse_edges(&mut self, from: u32, to: u32, travel_time: OrderedFloat<f32>) {
+        self[from].edges_rev.insert(to, travel_time);
     }
     pub fn from_snap(snap: &str) -> Self {
         let mut lines = snap.lines();
@@ -93,10 +95,10 @@ impl Graph {
             if parts.len() != 3 {
                 panic!("Expected 3 values per line, got {}", parts.len());
             }
-            let u: usize = parts[0].parse().expect("Failed to parse u");
-            let v: usize = parts[1].parse().expect("Failed to parse v");
-            let length: OrderedFloat<f64> = parts[2]
-                .parse::<f64>()
+            let u: u32 = parts[0].parse().expect("Failed to parse u");
+            let v: u32 = parts[1].parse().expect("Failed to parse v");
+            let length: OrderedFloat<f32> = parts[2]
+                .parse()
                 .map(OrderedFloat)
                 .expect("Failed to parse length");
             res.add_edge(u, v, length);
@@ -114,10 +116,10 @@ impl Graph {
             if parts.len() != 3 {
                 panic!("Expected 3 values per line, got {}", parts.len());
             }
-            let id: usize = parts[0].parse().expect("Failed to parse vertex id");
-            let lat: f64 = parts[1].parse::<f64>().expect("Failed to parse latitude");
-            let lon: f64 = parts[2].parse::<f64>().expect("Failed to parse longitude");
-            self.vertices[id].set_coords(lat, lon);
+            let id: u32 = parts[0].parse().expect("Failed to parse vertex id");
+            let lat: f32 = parts[1].parse().expect("Failed to parse latitude");
+            let lon: f32 = parts[2].parse().expect("Failed to parse longitude");
+            self[id].set_coords(lat, lon);
         }
     }
     pub fn from_files(snap_path: &str, coords_path: &str) -> Graph {
@@ -129,5 +131,19 @@ impl Graph {
         let mut graph = Graph::from_snap(&snap_data);
         graph.add_coords(&coords_data);
         graph
+    }
+}
+
+impl Index<u32> for Graph {
+    type Output = Vertex;
+
+    fn index(&self, index: u32) -> &Self::Output {
+        &self.vertices[index as usize]
+    }
+}
+
+impl IndexMut<u32> for Graph {
+    fn index_mut(&mut self, index: u32) -> &mut Self::Output {
+        &mut self.vertices[index as usize]
     }
 }

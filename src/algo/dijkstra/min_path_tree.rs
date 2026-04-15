@@ -1,19 +1,17 @@
 use std::collections::BinaryHeap;
-
-use eframe::egui::debug_text::print;
 use ordered_float::OrderedFloat;
-
+use crate::index_vec;
 use crate::{algo::utils::QueueItem, graph::Graph};
-
+use crate::utility::IndexVec;
     
 impl Graph{
-    pub fn tree_edge_region_flags(&mut self, from: usize) {
+    pub fn tree_edge_region_flags(&mut self, from: u32) {
 
         let edge_region_flags = self.edge_region_flags.as_mut().unwrap();
         let regions = self.regions.as_ref().unwrap();
 
-        let mut dist: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); self.size];
-        let mut pred: Vec<usize> = vec![0; self.size];
+        let mut dist: IndexVec<OrderedFloat<f32>> = index_vec![OrderedFloat(f32::MAX); self.size];
+        let mut pred: IndexVec<u32> = index_vec![0; self.size];
 
         let mut que: BinaryHeap<QueueItem> = BinaryHeap::new();
         dist[from] = OrderedFloat(0.0);
@@ -30,7 +28,7 @@ impl Graph{
                 edge_region_flags[cur.vertex].get_mut(&pred[cur.vertex]).unwrap()[regions[from]] = true;
             }
 
-            for c in &self.vertices[cur.vertex].edges_rev {
+            for c in &self.vertices[cur.vertex as usize].edges_rev {
                 let alt = QueueItem::new(*c.0, c.1 + cur.distance);
                 if alt.distance < dist[alt.vertex] {
                     que.push(alt);
@@ -41,12 +39,12 @@ impl Graph{
         }
     }
 
-    pub fn tree_edge_region_flags_rev(&mut self, to: usize) {
+    pub fn tree_edge_region_flags_rev(&mut self, to: u32) {
         let edge_region_flags_rev = self.edge_region_flags_rev.as_mut().unwrap();
         let regions = self.regions.as_ref().unwrap();
 
-        let mut dist: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); self.size];
-        let mut pred: Vec<usize> = vec![0; self.size];
+        let mut dist: IndexVec<OrderedFloat<f32>> = index_vec![OrderedFloat(f32::MAX); self.size];
+        let mut pred: IndexVec<u32> = index_vec![0; self.size];
 
         let mut que: BinaryHeap<QueueItem> = BinaryHeap::new();
         dist[to] = OrderedFloat(0.0);
@@ -63,7 +61,7 @@ impl Graph{
                 edge_region_flags_rev[cur.vertex].get_mut(&pred[cur.vertex]).unwrap()[regions[to]] = true;
             }
 
-            for c in &self.vertices[cur.vertex].edges {
+            for c in &self.vertices[cur.vertex as usize].edges {
                 let alt = QueueItem::new(*c.0, c.1 + cur.distance);
                 if alt.distance < dist[alt.vertex] {
                     que.push(alt);

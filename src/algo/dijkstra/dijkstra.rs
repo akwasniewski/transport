@@ -1,13 +1,14 @@
 use crate::{
     algo::{algo_result::AlgoResult, utils::QueueItem},
-    graph::Graph,
+    graph::Graph, index_vec,
 };
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
 use std::{collections::BinaryHeap, thread};
+use crate::utility::IndexVec;
 
-pub fn dijkstra(graph: &Graph, from: usize, to: usize, animate: bool) -> AlgoResult {
-    let mut dist: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
+pub fn dijkstra(graph: &Graph, from: u32, to: u32, animate: bool) -> AlgoResult {
+    let mut dist: IndexVec<OrderedFloat<f32>> = index_vec![OrderedFloat(f32::MAX); graph.size];
 
     let mut que: BinaryHeap<QueueItem> = BinaryHeap::new();
     dist[from] = OrderedFloat(0.0);
@@ -17,7 +18,7 @@ pub fn dijkstra(graph: &Graph, from: usize, to: usize, animate: bool) -> AlgoRes
         let cur = que.pop().unwrap();
 
         if animate && cur.vertex != from && cur.vertex != to {
-            graph.vertices[cur.vertex].recolor(Color32::LIGHT_BLUE);
+            graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
             thread::sleep(std::time::Duration::from_millis(10));
         }
 
@@ -33,7 +34,7 @@ pub fn dijkstra(graph: &Graph, from: usize, to: usize, animate: bool) -> AlgoRes
                 visited_nodes,
             };
         }
-        for c in &graph.vertices[cur.vertex].edges {
+        for c in &graph[cur.vertex].edges {
             let alt = QueueItem::new(*c.0, c.1 + cur.distance);
             if alt.distance < dist[alt.vertex] {
                 que.push(alt);

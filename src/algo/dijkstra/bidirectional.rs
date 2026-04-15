@@ -1,14 +1,15 @@
 use crate::{
     algo::{algo_result::AlgoResult, utils::QueueItem},
-    graph::Graph,
+    graph::Graph, index_vec,
 };
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
 use std::{collections::BinaryHeap, thread};
+use crate::utility::IndexVec;
 
-pub fn bidirectional_dijkstra(graph: &Graph, from: usize, to: usize, animate: bool) -> AlgoResult {
-    let mut dist_f: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
-    let mut dist_b: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
+pub fn bidirectional_dijkstra(graph: &Graph, from: u32, to: u32, animate: bool) -> AlgoResult {
+    let mut dist_f: IndexVec<OrderedFloat<f32>> = index_vec![OrderedFloat(f32::MAX); graph.size];
+    let mut dist_b: IndexVec<OrderedFloat<f32>> = index_vec![OrderedFloat(f32::MAX); graph.size];
     dist_f[from] = OrderedFloat(0.0);
     dist_b[to] = OrderedFloat(0.0);
 
@@ -19,7 +20,7 @@ pub fn bidirectional_dijkstra(graph: &Graph, from: usize, to: usize, animate: bo
 
     que_b.push(QueueItem::new(to, OrderedFloat(0.0)));
 
-    let mut best_dist = OrderedFloat(f64::MAX);
+    let mut best_dist = OrderedFloat(f32::MAX);
 
     let mut visited_nodes = 0;
 
@@ -42,11 +43,11 @@ pub fn bidirectional_dijkstra(graph: &Graph, from: usize, to: usize, animate: bo
             visited_nodes += 1;
 
             if animate && cur.vertex != from && cur.vertex != to {
-                graph.vertices[cur.vertex].recolor(Color32::LIGHT_BLUE);
+                graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
                 thread::sleep(std::time::Duration::from_millis(10));
             }
 
-            for c in &graph.vertices[cur.vertex].edges {
+            for c in &graph[cur.vertex].edges {
                 let alt: QueueItem = QueueItem::new(*c.0, c.1 + cur.distance);
                 if alt.distance < dist_f[alt.vertex] {
                     que_f.push(alt);
@@ -66,9 +67,9 @@ pub fn bidirectional_dijkstra(graph: &Graph, from: usize, to: usize, animate: bo
             visited_nodes += 1;
 
             if animate && cur.vertex != from && cur.vertex != to {
-                graph.vertices[cur.vertex].recolor(Color32::LIGHT_BLUE);
+                graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
             }
-            for c in &graph.vertices[cur.vertex].edges_rev {
+            for c in &graph[cur.vertex].edges_rev {
                 let alt: QueueItem = QueueItem::new(*c.0, c.1 + cur.distance);
                 if alt.distance < dist_b[alt.vertex] {
                     que_b.push(alt);

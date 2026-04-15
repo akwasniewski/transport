@@ -1,19 +1,20 @@
 use crate::{
     algo::{algo_result::AlgoResult, utils::QueueItem},
-    graph::Graph,
+    graph::Graph, index_vec,
 };
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
 use std::{collections::BinaryHeap, thread};
+use crate::utility::IndexVec;
 
 pub fn astar(
     graph: &Graph,
-    from: usize,
-    to: usize,
+    from: u32,
+    to: u32,
     animate: bool,
-    potential: fn(&Graph, usize, usize, usize) -> f64,
+    potential: fn(&Graph, u32, u32, u32) -> f32,
 ) -> AlgoResult {
-    let mut dist: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
+    let mut dist: IndexVec<OrderedFloat<f32>> = index_vec![OrderedFloat(f32::MAX); graph.size];
 
     let mut que: BinaryHeap<QueueItem> = BinaryHeap::new();
     dist[from] = OrderedFloat(0.0);
@@ -33,7 +34,7 @@ pub fn astar(
         }
 
         if animate && cur.vertex != from && cur.vertex != to {
-            graph.vertices[cur.vertex].recolor(Color32::LIGHT_BLUE);
+            graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
             thread::sleep(std::time::Duration::from_millis(10));
         }
 
@@ -46,7 +47,7 @@ pub fn astar(
             };
         }
 
-        for c in &graph.vertices[cur.vertex].edges {
+        for c in &graph[cur.vertex].edges {
             let alt_cost = c.1 + dist[cur.vertex].0;
             if alt_cost < dist[*c.0] {
                 que.push(QueueItem {

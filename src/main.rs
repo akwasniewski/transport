@@ -2,6 +2,7 @@ mod algo;
 mod graph;
 mod vis;
 mod graph_building;
+mod utility;
 use crate::{
     algo::{
         alt::landmarks::alt_potential, arc_flags::{arc_flags::arc_flags, bidirecional::bidirectional_arcflags}, astar::{
@@ -20,10 +21,10 @@ fn main() {
     println!("Astar: {}", astar(&graph, 0, 6000, false, earth_dist));
 
     graph.get_random_landmarks(16);
-    println!("Alt: {}", astar(&graph, 0, 6000, false, alt_potential));
+    println!("Alt random: {}", astar(&graph, 0, 6000, false, alt_potential));
 
     graph.get_farthest_landmarks(16);
-    println!("Alt: {}", astar(&graph, 0, 6000, false, alt_potential));
+    println!("Alt farthest: {}", astar(&graph, 0, 6000, false, alt_potential));
 
     println!(
         "Dijkstra: {}",

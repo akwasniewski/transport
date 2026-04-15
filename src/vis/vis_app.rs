@@ -78,11 +78,11 @@ pub struct VisApp {
     edge_cache: Vec<(egui::Pos2, egui::Pos2)>,
     last_size: egui::Vec2,
     resize_countdown: u8,
-    big_vertices: HashSet<usize>,
+    big_vertices: HashSet<u32>,
 
     // user-controlled state
-    source: usize,
-    sink: usize,
+    source: u32,
+    sink: u32,
     algo: AlgoChoice,
     source_input: String,
     sink_input: String,
@@ -91,7 +91,7 @@ pub struct VisApp {
     assigning: Assigning,
 
     // result
-    result: Arc<Mutex<Option<f64>>>,
+    result: Arc<Mutex<Option<f32>>>,
     running: bool,
 
     color_snapshot: Vec<egui::Color32>,
@@ -100,9 +100,9 @@ pub struct VisApp {
 impl VisApp {
     pub fn new(
         graph: Arc<Graph>,
-        big_vertices: HashSet<usize>,
-        source: usize,
-        sink: usize,
+        big_vertices: HashSet<u32>,
+        source: u32,
+        sink: u32,
     ) -> Self {
         let color_snapshot = vec![egui::Color32::LIGHT_RED; graph.size];
         Self {
@@ -134,29 +134,29 @@ impl VisApp {
             .vertices
             .iter()
             .map(|v| v.coords.0)
-            .fold(f64::INFINITY, f64::min);
+            .fold(f32::INFINITY, f32::min);
         let max_lat = self
             .graph
             .vertices
             .iter()
             .map(|v| v.coords.0)
-            .fold(f64::NEG_INFINITY, f64::max);
+            .fold(f32::NEG_INFINITY, f32::max);
         let min_lon = self
             .graph
             .vertices
             .iter()
             .map(|v| v.coords.1)
-            .fold(f64::INFINITY, f64::min);
+            .fold(f32::INFINITY, f32::min);
         let max_lon = self
             .graph
             .vertices
             .iter()
             .map(|v| v.coords.1)
-            .fold(f64::NEG_INFINITY, f64::max);
+            .fold(f32::NEG_INFINITY, f32::max);
         let lat_range = max_lat - min_lat;
         let lon_range = max_lon - min_lon;
 
-        let to_screen = |lat: f64, lon: f64| -> egui::Pos2 {
+        let to_screen = |lat: f32, lon: f32| -> egui::Pos2 {
             let x = (lon - min_lon) / lon_range;
             let y = (lat - min_lat) / lat_range;
             egui::pos2((x as f32) * size.x, size.y - (y as f32) * size.y)
@@ -274,7 +274,7 @@ impl eframe::App for VisApp {
                     if r.lost_focus() {
                         if let Ok(v) = self.source_input.trim().parse::<usize>() {
                             if v < self.graph.size {
-                                self.source = v;
+                                self.source = v as u32;
                             }
                         }
                         // re-sync display in case the value was clamped / invalid
@@ -300,7 +300,7 @@ impl eframe::App for VisApp {
                     if r.lost_focus() {
                         if let Ok(v) = self.sink_input.trim().parse::<usize>() {
                             if v < self.graph.size {
-                                self.sink = v;
+                                self.sink = v as u32;
                             }
                         }
                         self.sink_input = self.sink.to_string();
@@ -435,11 +435,11 @@ impl eframe::App for VisApp {
                     if let Some(idx) = self.vertex_at(click_pos) {
                         match self.assigning {
                             Assigning::Source => {
-                                self.source = idx;
+                                self.source = idx as u32;
                                 self.source_input = idx.to_string();
                             }
                             Assigning::Sink => {
-                                self.sink = idx;
+                                self.sink = idx as u32;
                                 self.sink_input = idx.to_string();
                             }
                             Assigning::None => {}
@@ -462,9 +462,9 @@ impl eframe::App for VisApp {
             // Draw vertices — shift from local into screen space.
             for (i, pos) in self.vertex_pos.iter().enumerate() {
                 let screen_pos = *pos + offset;
-                let is_source = i == self.source;
-                let is_sink = i == self.sink;
-                let is_big = self.big_vertices.contains(&i);
+                let is_source = i == self.source as usize;
+                let is_sink = i == self.sink as usize;
+                let is_big = self.big_vertices.contains(&(i as u32));
                 let base_r = if is_big { 5.0_f32 } else { 1.5_f32 };
 
                 if is_source || is_sink {
