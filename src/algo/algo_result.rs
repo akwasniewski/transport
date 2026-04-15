@@ -2,8 +2,8 @@ use std::fmt;
 
 #[derive(Copy, Clone, Debug)]
 pub struct AlgoResult {
-    pub distance: Option<f64>,
-    pub visited_nodes: usize,
+    pub distance: Option<f32>,
+    pub visited_nodes: u32,
 }
 
 impl fmt::Display for AlgoResult {

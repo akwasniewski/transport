@@ -1,5 +1,6 @@
 use ordered_float::OrderedFloat;
-use crate::graph::Graph;
+use crate::{graph::Graph, index_vec};
+use crate::utility::IndexVec;
 // do I need to write it mysefl? No. Do I want to? Yes.
 
 fn kth<T: Ord>(indices: &mut [usize], data: &[T], k:usize) -> usize
@@ -57,12 +58,12 @@ fn quickselect<T: Ord>(indices: &mut[usize], data: &[T],  k: usize) -> usize{
 
 impl Graph{
     // division_depth is log of the number of regions generated
-    pub fn divide_into_regions(&mut self, division_depth: usize){
-        let latitudes: Vec<OrderedFloat<f64>> = self.vertices.iter().map(|v| OrderedFloat(v.coords.0)).collect();
-        let longitudes: Vec<OrderedFloat<f64>> = self.vertices.iter().map(|v| OrderedFloat(v.coords.1)).collect();
+    pub fn divide_into_regions(&mut self, division_depth: u32){
+        let latitudes: Vec<OrderedFloat<f32>> = self.vertices.iter().map(|v| OrderedFloat(v.coords.0)).collect();
+        let longitudes: Vec<OrderedFloat<f32>> = self.vertices.iter().map(|v| OrderedFloat(v.coords.1)).collect();
         let mut indices: Vec<usize> = (0..self.vertices.len()).collect();
 
-        self.regions = Some(vec![0;self.vertices.len()]);
+        self.regions = Some(index_vec![0;self.vertices.len()]);
         let mut region_counter = 0;
         
         self.kd_division(&mut indices, division_depth, &latitudes, &longitudes, &mut region_counter);
@@ -70,15 +71,15 @@ impl Graph{
     }
 
     fn kd_division(&mut self, indices: &mut[usize], 
-        division_depth: usize, 
-        latitudes: &[OrderedFloat<f64>], 
-        longitudes: &[OrderedFloat<f64>], 
-        region_counter: &mut usize)
+        division_depth: u32, 
+        latitudes: &[OrderedFloat<f32>], 
+        longitudes: &[OrderedFloat<f32>], 
+        region_counter: &mut u32)
     {
         if division_depth==0{
             let regions = self.regions.as_mut().unwrap();
            for &cur in indices.iter(){
-                regions[cur] = *region_counter;
+                regions[cur as u32] = *region_counter;
             }
             *region_counter+=1;
             return;

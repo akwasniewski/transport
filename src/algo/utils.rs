@@ -4,12 +4,12 @@ use ordered_float::OrderedFloat;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct QueueItem {
-    pub vertex: usize,
-    pub priority: OrderedFloat<f64>,
-    pub distance: OrderedFloat<f64>,
+    pub vertex: u32,
+    pub priority: OrderedFloat<f32>,
+    pub distance: OrderedFloat<f32>,
 }
 impl QueueItem {
-    pub fn new(vertex: usize, cost: OrderedFloat<f64>) -> Self {
+    pub fn new(vertex: u32, cost: OrderedFloat<f32>) -> Self {
         Self {
             vertex,
             priority: cost,
@@ -18,9 +18,9 @@ impl QueueItem {
     }
 
     pub fn with_priority(
-        vertex: usize,
-        priority: OrderedFloat<f64>,
-        distance: OrderedFloat<f64>,
+        vertex: u32,
+        priority: OrderedFloat<f32>,
+        distance: OrderedFloat<f32>,
     ) -> Self {
         Self {
             vertex,

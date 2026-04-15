@@ -1,29 +1,30 @@
 use crate::{
     algo::{algo_result::AlgoResult, utils::QueueItem},
-    graph::Graph,
+    graph::Graph, index_vec,
 };
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
 use std::{collections::BinaryHeap, thread, time::Duration};
+use crate::utility::IndexVec;
 
 pub fn bidirectional_arcflags<Ff, Fb>(
     graph: &Graph,
-    from: usize,
-    to: usize,
+    from: u32,
+    to: u32,
     animate: bool,
     potential_f: Ff,
     potential_b: Fb,
 ) -> AlgoResult
 where
-    Ff: Fn(&Graph, usize, usize, usize) -> f64 + Send + Sync + 'static,
-    Fb: Fn(&Graph, usize, usize, usize) -> f64 + Send + Sync + 'static,
+    Ff: Fn(&Graph, u32, u32, u32) -> f32 + Send + Sync + 'static,
+    Fb: Fn(&Graph, u32, u32, u32) -> f32 + Send + Sync + 'static,
 {
     let edge_region_flags = graph.edge_region_flags.as_ref().unwrap();
     let edge_region_flags_rev = graph.edge_region_flags_rev.as_ref().unwrap();
     let regions = graph.regions.as_ref().unwrap();
 
-    let mut dist_f: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
-    let mut dist_b: Vec<OrderedFloat<f64>> = vec![OrderedFloat(f64::MAX); graph.size];
+    let mut dist_f: IndexVec<OrderedFloat<f32>> = index_vec![OrderedFloat(f32::MAX); graph.size];
+    let mut dist_b: IndexVec<OrderedFloat<f32>> = index_vec![OrderedFloat(f32::MAX); graph.size];
 
     dist_f[from] = OrderedFloat(0.0);
     dist_b[to] = OrderedFloat(0.0);
@@ -42,7 +43,7 @@ where
         distance: OrderedFloat(0.0),
     });
 
-    let mut best_dist = OrderedFloat(f64::MAX);
+    let mut best_dist = OrderedFloat(f32::MAX);
 
     let mut visited_nodes = 0;
 
@@ -64,18 +65,18 @@ where
             visited_nodes += 1;
 
             if animate && cur.vertex != from && cur.vertex != to {
-                graph.vertices[cur.vertex].recolor(Color32::LIGHT_BLUE);
+                graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
                 thread::sleep(std::time::Duration::from_millis(10));
             }
 
-            for c in &graph.vertices[cur.vertex].edges {
+            for c in &graph[cur.vertex].edges {
                 if !edge_region_flags[cur.vertex].get(c.0).unwrap()[regions[to]] && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
                     continue;
                 } 
 
                 let alt_cost = c.1 + dist_f[cur.vertex].0;
 
-                if alt_cost < dist_f[*c.0] && dist_b[*c.0] == OrderedFloat(f64::MAX) {
+                if alt_cost < dist_f[*c.0] && dist_b[*c.0] == OrderedFloat(f32::MAX) {
                     que_f.push(QueueItem::with_priority(
                         *(c.0),
                         alt_cost + potential_f(graph, *c.0, from, to),
@@ -98,18 +99,18 @@ where
             visited_nodes += 1;
 
             if animate && cur.vertex != from && cur.vertex != to {
-                graph.vertices[cur.vertex].recolor(Color32::LIGHT_BLUE);
+                graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
                 thread::sleep(Duration::from_millis(2));
             }
 
-            for c in &graph.vertices[cur.vertex].edges_rev {
+            for c in &graph[cur.vertex].edges_rev {
                 if !edge_region_flags_rev[cur.vertex].get(c.0).unwrap()[regions[from]] && regions[cur.vertex] != regions[to] && regions[cur.vertex] != regions[from]{
                     continue;
                 } 
 
                 let alt_cost = c.1 + dist_b[cur.vertex].0;
 
-                if alt_cost < dist_b[*c.0] && dist_f[*c.0] == OrderedFloat(f64::MAX) {
+                if alt_cost < dist_b[*c.0] && dist_f[*c.0] == OrderedFloat(f32::MAX) {
                     que_b.push(QueueItem::with_priority(
                         *(c.0),
                         alt_cost + potential_b(graph, *c.0, from, to),
@@ -126,7 +127,7 @@ where
 
     AlgoResult {
         distance: match best_dist {
-            OrderedFloat(f64::MAX) => None,
+            OrderedFloat(f32::MAX) => None,
             e => Some(*e),
         },
         visited_nodes,
