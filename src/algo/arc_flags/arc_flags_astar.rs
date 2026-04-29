@@ -4,7 +4,7 @@ use crate::{
 };
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
-use std::{collections::BinaryHeap, thread};
+use std::{collections::BinaryHeap, sync::atomic::Ordering, thread};
 use crate::utility::IndexVec;
 
 //copy of astar with needed changes
@@ -39,7 +39,6 @@ pub fn arc_flags_astar(
 
         if animate && cur.vertex != from && cur.vertex != to {
             graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
-            thread::sleep(std::time::Duration::from_millis(10));
         }
 
         visited_nodes += 1;
@@ -52,7 +51,7 @@ pub fn arc_flags_astar(
         }
 
         for c in &graph[cur.vertex].edges {
-            if !edge_region_flags[cur.vertex].get(c.0).unwrap()[regions[to]] && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
+            if !edge_region_flags[cur.vertex].get(c.0).unwrap()[regions[to]].load(Ordering::Relaxed) && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
                 continue;
             } 
             let alt_cost = c.1 + dist[cur.vertex].0;

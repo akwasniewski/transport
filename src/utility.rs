@@ -17,6 +17,10 @@ impl<T> IndexVec<T> {
         Self { data: Vec::new() }
     }
 
+    pub fn from_vec(data: Vec<T>) -> Self {
+        Self { data }
+    }
+
     pub fn with_capacity(cap: usize) -> Self {
         Self { data: Vec::with_capacity(cap) }
     }

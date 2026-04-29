@@ -4,7 +4,7 @@ use crate::{
 };
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
-use std::{collections::BinaryHeap, thread, time::Duration};
+use std::{collections::BinaryHeap, sync::atomic::Ordering, thread, time::Duration};
 use crate::utility::IndexVec;
 
 pub fn bidirectional_arcflags<Ff, Fb>(
@@ -66,12 +66,11 @@ where
 
             if animate && cur.vertex != from && cur.vertex != to {
                 graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
-                thread::sleep(std::time::Duration::from_millis(10));
             }
 
             for c in &graph[cur.vertex].edges {
-                if !edge_region_flags[cur.vertex].get(c.0).unwrap()[regions[to]] && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
-                    continue;
+                if !edge_region_flags[cur.vertex].get(c.0).unwrap()[regions[to]].load(Ordering::Relaxed) && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
+                            continue;
                 } 
 
                 let alt_cost = c.1 + dist_f[cur.vertex].0;
@@ -104,7 +103,7 @@ where
             }
 
             for c in &graph[cur.vertex].edges_rev {
-                if !edge_region_flags_rev[cur.vertex].get(c.0).unwrap()[regions[from]] && regions[cur.vertex] != regions[to] && regions[cur.vertex] != regions[from]{
+                if !edge_region_flags[cur.vertex].get(c.0).unwrap()[regions[from]].load(Ordering::Relaxed) && regions[cur.vertex] != regions[to] && regions[cur.vertex] != regions[from]{
                     continue;
                 } 
 

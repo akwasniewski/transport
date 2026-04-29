@@ -3,7 +3,7 @@ use ordered_float::OrderedFloat;
 use std::{
     collections::HashMap,
     fs,
-    sync::atomic::{AtomicU32, Ordering},
+    sync::atomic::{AtomicBool, AtomicU32, Ordering},
 };
 use std::ops::{Index, IndexMut};
 use crate::utility::IndexVec;
@@ -49,8 +49,8 @@ pub struct Graph {
     pub vertices: Vec<Vertex>,
     pub(crate) landmarks: HashMap<u32, LandmarkData>,
     pub(crate) regions: Option<IndexVec<u32>>,
-    pub(crate) edge_region_flags: Option<IndexVec<HashMap<u32, IndexVec<bool>>>>,
-    pub(crate) edge_region_flags_rev: Option<IndexVec<HashMap<u32, IndexVec<bool>>>>,
+    pub(crate) edge_region_flags: Option<IndexVec<HashMap<u32, IndexVec<AtomicBool>>>>,
+    pub(crate) edge_region_flags_rev: Option<IndexVec<HashMap<u32, IndexVec<AtomicBool>>>>,
 }
 
 impl Graph {

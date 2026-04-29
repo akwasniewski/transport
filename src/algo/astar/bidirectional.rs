@@ -61,7 +61,6 @@ where
 
             if animate && cur.vertex != from && cur.vertex != to {
                 graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
-                thread::sleep(std::time::Duration::from_millis(10));
             }
 
             for c in &graph[cur.vertex].edges {

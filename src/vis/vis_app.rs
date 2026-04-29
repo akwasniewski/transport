@@ -72,13 +72,37 @@ enum Assigning {
     None,
 }
 
+fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
+    let i = (h * 6.0).floor() as u32;
+    let f = h * 6.0 - i as f32;
+    let (p, q, t) = (v * (1.0 - s), v * (1.0 - f * s), v * (1.0 - (1.0 - f) * s));
+    let (r, g, b) = match i % 6 {
+        0 => (v, t, p),
+        1 => (q, v, p),
+        2 => (p, v, t),
+        3 => (p, q, v),
+        4 => (t, p, v),
+        _ => (v, p, q),
+    };
+    ((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8)
+}
+
+fn region_color(region_id: u32) -> egui::Color32 {
+    let h = ((region_id.wrapping_mul(2654435761)) >> 16) as f32 / 65535.0;
+    let (r, g, b) = hsv_to_rgb(h, 0.70, 0.90);
+    egui::Color32::from_rgb(r, g, b)
+}
+
 pub struct VisApp {
     pub graph: Arc<Graph>,
     vertex_pos: Vec<egui::Pos2>,
-    edge_cache: Vec<(usize, usize)>,
     last_size: egui::Vec2,
     resize_countdown: u8,
     big_vertices: HashSet<u32>,
+
+    // button options
+    show_regions: bool,
+    show_landmarks: bool,
 
     // user-controlled state
     source: u32,
@@ -108,10 +132,11 @@ impl VisApp {
         Self {
             graph,
             vertex_pos: Vec::new(),
-            edge_cache: Vec::new(),
+            show_regions: false,
             last_size: egui::Vec2::ZERO,
             resize_countdown: 0,
             big_vertices,
+            show_landmarks: false,
             source,
             sink,
             algo: AlgoChoice::Dijkstra,
@@ -128,60 +153,18 @@ impl VisApp {
         if self.graph.vertices.is_empty() {
             return;
         }
-
-        let min_lat = self
-            .graph
-            .vertices
-            .iter()
-            .map(|v| v.coords.0)
-            .fold(f32::INFINITY, f32::min);
-        let max_lat = self
-            .graph
-            .vertices
-            .iter()
-            .map(|v| v.coords.0)
-            .fold(f32::NEG_INFINITY, f32::max);
-        let min_lon = self
-            .graph
-            .vertices
-            .iter()
-            .map(|v| v.coords.1)
-            .fold(f32::INFINITY, f32::min);
-        let max_lon = self
-            .graph
-            .vertices
-            .iter()
-            .map(|v| v.coords.1)
-            .fold(f32::NEG_INFINITY, f32::max);
+        let min_lat = self.graph.vertices.iter().map(|v| v.coords.0).fold(f32::INFINITY,    f32::min);
+        let max_lat = self.graph.vertices.iter().map(|v| v.coords.0).fold(f32::NEG_INFINITY, f32::max);
+        let min_lon = self.graph.vertices.iter().map(|v| v.coords.1).fold(f32::INFINITY,    f32::min);
+        let max_lon = self.graph.vertices.iter().map(|v| v.coords.1).fold(f32::NEG_INFINITY, f32::max);
         let lat_range = max_lat - min_lat;
         let lon_range = max_lon - min_lon;
 
-        let to_screen = |lat: f32, lon: f32| -> egui::Pos2 {
-            let x = (lon - min_lon) / lon_range;
-            let y = (lat - min_lat) / lat_range;
-            egui::pos2((x as f32) * size.x, size.y - (y as f32) * size.y)
-        };
-
-        self.vertex_pos = self
-            .graph
-            .vertices
-            .iter()
-            .map(|v| to_screen(v.coords.0, v.coords.1))
-            .collect();
-
-        self.edge_cache.clear();
-        for (src_idx, vertex) in self.graph.vertices.iter().enumerate() {
-            for (target_label, _) in &vertex.edges {
-                if let Some(tgt_idx) = self
-                    .graph
-                    .vertices
-                    .iter()
-                    .position(|v| v.label == *target_label)
-                {
-                    self.edge_cache.push((src_idx, tgt_idx));
-                }
-            }
-        }
+        self.vertex_pos = self.graph.vertices.iter().map(|v| {
+            let x = (v.coords.1 - min_lon) / lon_range;
+            let y = (v.coords.0 - min_lat) / lat_range;
+            egui::pos2(x * size.x, size.y - y * size.y)
+        }).collect();
     }
 
     fn vertex_at(&self, pos: egui::Pos2) -> Option<usize> {
@@ -198,6 +181,15 @@ impl VisApp {
             })
             .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
             .map(|(i, _)| i)
+    }
+
+    /// Deterministic colour from a u32 region id — spreads hues evenly.
+    fn region_color(region_id: u32) -> egui::Color32 {
+        // Cheap integer hash → HSV hue
+        let h = ((region_id.wrapping_mul(2654435761)) >> 16) as f32 / 65535.0;
+        // HSV (h, 0.7, 0.9) → RGB
+        let (r, g, b) = hsv_to_rgb(h, 0.7, 0.9);
+        egui::Color32::from_rgb(r, g, b)
     }
 
     /// Reset vertex colors and spawn the selected algorithm in a background thread.
@@ -390,10 +382,54 @@ impl eframe::App for VisApp {
                         ui.label(text);
                     });
                 };
+
+                ui.add_space(10.0);
+                ui.separator();
+                ui.add_space(6.0);
+
+                // ── Regions ──────────────────────────────────────────────────
+                ui.label("Visualisation");
+                let region_btn_text = if self.show_regions {
+                    "🗺  Hide Regions"
+                } else {
+                    "🗺  Show Regions"
+                };
+                if ui
+                    .add(egui::Button::new(region_btn_text)
+                        .min_size(egui::vec2(210.0, 28.0)))
+                    .clicked()
+                {
+                    self.show_regions = !self.show_regions;
+                    // When turning off, restore the algorithm colour snapshot.
+                    if !self.show_regions {
+                        for (i, v) in self.graph.vertices.iter().enumerate() {
+                            let [r, g, b, a] = v.color.load(Ordering::Relaxed).to_be_bytes();
+                            self.color_snapshot[i] =
+                                egui::Color32::from_rgba_premultiplied(r, g, b, a);
+                        }
+                    }
+                }
+
+                let has_landmarks = !self.graph.landmarks.is_empty();
+                let lm_btn_text = if self.show_landmarks { "★  Hide Landmarks" } else { "★  Show Landmarks" };
+                if ui
+                    .add_enabled(
+                        has_landmarks,
+                        egui::Button::new(lm_btn_text).min_size(egui::vec2(210.0, 28.0)),
+                    )
+                    .clicked()
+                {
+                    self.show_landmarks = !self.show_landmarks;
+                }
+                if !has_landmarks {
+                    ui.colored_label(egui::Color32::GRAY, "Run an ALT algorithm first");
+                }
+
                 dot(ui, egui::Color32::GREEN, "Source");
                 dot(ui, egui::Color32::RED, "Sink");
                 dot(ui, egui::Color32::LIGHT_BLUE, "Visited");
                 dot(ui, egui::Color32::LIGHT_RED, "Unvisited");
+                dot(ui, egui::Color32::YELLOW, "Landmark");
 
                 ui.add_space(10.0);
                 ui.separator();
@@ -407,7 +443,6 @@ impl eframe::App for VisApp {
             let size = ui.available_size();
 
             if self.vertex_pos.is_empty()
-                || self.edge_cache.is_empty()
                 || self.resize_countdown == RESIZE_COUNTDOWN_THRESHOLD
             {
                 self.resize_countdown = 0;
@@ -449,62 +484,57 @@ impl eframe::App for VisApp {
 
             let painter = ui.painter_at(rect);
 
-            const LARGE_GRAPH_THRESHOLD: usize = 10_000;
+            const LARGE_GRAPH_THRESHOLD: usize = 30_000;
             let stride = if self.graph.size > LARGE_GRAPH_THRESHOLD {
                 (self.graph.size / LARGE_GRAPH_THRESHOLD).max(1)
             } else {
                 1
             };
-            
-            let drawn: Vec<bool> = (0..self.graph.size)
-                .map(|i| {
-                    i == self.source as usize
-                        || i == self.sink as usize
-                        || self.big_vertices.contains(&(i as u32))
-                        || i % stride == 0
-                })
-                .collect();
 
-            // Draw edges — both endpoints must be drawn.
-            for &(src, tgt) in &self.edge_cache {
-                if !drawn[src] || !drawn[tgt] {
-                    continue;
-                }
-                painter.line_segment(
-                    [self.vertex_pos[src] + offset, self.vertex_pos[tgt] + offset],
-                    egui::Stroke::new(1.0, egui::Color32::LIGHT_GRAY),
-                );
-            }
-            for (i, pos) in self.vertex_pos.iter().enumerate() {
+            for (i, &pos) in self.vertex_pos.iter().enumerate() {
                 let is_source = i == self.source as usize;
                 let is_sink   = i == self.sink   as usize;
-                let is_big    = self.big_vertices.contains(&(i as u32));
 
-                let cur_color = self
-                    .color_snapshot
-                    .get(i)
-                    .copied()
-                    .unwrap_or(egui::Color32::LIGHT_RED);
-                let is_visited = cur_color != egui::Color32::LIGHT_RED;
+                let cur_color = if self.show_regions {
+                    self.graph.regions.as_ref()
+                        .and_then(|r| r.get(i as u32))
+                        .map(|&rid| region_color(rid))
+                        .unwrap_or(egui::Color32::LIGHT_RED)
+                } else {
+                    self.color_snapshot.get(i).copied().unwrap_or(egui::Color32::LIGHT_RED)
+                };
 
-                if !is_source && !is_sink && !is_big && !is_visited && (i % stride != 0) {
+                // Skip uninteresting vertices to stay within the threshold budget.
+                if !is_source && !is_sink && i % stride != 0 {
                     continue;
                 }
 
-                let screen_pos = *pos + offset;
-                let base_r = if is_big { 5.0_f32 } else { 1.5_f32 };
+                let screen_pos = pos + offset;
 
                 if is_source || is_sink {
                     let color = if is_source { egui::Color32::GREEN } else { egui::Color32::RED };
-                    let r = base_r.max(5.0);
-                    painter.circle_stroke(screen_pos, r + 4.0, egui::Stroke::new(2.0, color));
-                    painter.circle_filled(screen_pos, r, color);
+                    painter.circle_stroke(screen_pos, 9.0, egui::Stroke::new(2.0, color));
+                    painter.circle_filled(screen_pos, 5.0, color);
                 } else {
-                    painter.circle_filled(screen_pos, base_r, cur_color);
+                    let r = if self.big_vertices.contains(&(i as u32)) { 5.0 } else { 1.5 };
+                    painter.circle_filled(screen_pos, r, cur_color);
                 }
             }
+            if self.show_landmarks {
+                for &lm_id in self.graph.landmarks.keys() {
+                    let idx = lm_id as usize;
+                    if let Some(&pos) = self.vertex_pos.get(idx) {
+                        let screen_pos = pos + offset;
+                        painter.circle_filled(screen_pos, 8.0, egui::Color32::YELLOW);
+                        painter.circle_stroke(screen_pos, 8.0, egui::Stroke::new(2.0, egui::Color32::GOLD));
+                    }
+                }
+            }
+                  
         });
 
         ctx.request_repaint();
     }
 }
+
+
