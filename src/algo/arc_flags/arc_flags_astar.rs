@@ -8,7 +8,7 @@ use std::{collections::BinaryHeap, thread};
 use crate::utility::IndexVec;
 
 //copy of astar with needed changes
-pub fn arc_flags(
+pub fn arc_flags_astar(
     graph: &Graph,
     from: u32,
     to: u32,

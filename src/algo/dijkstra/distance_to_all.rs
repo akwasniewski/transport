@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use ordered_float::OrderedFloat;
 use crate::{graph::Graph, index_vec};
-use crate::utility::IndexVec;
+use crate::utility::{EdgeDir, IndexVec};
 
 impl Graph {
     pub fn distance_to_all(&self, from: u32, dir: EdgeDir) -> IndexVec<OrderedFloat<f32>> {
@@ -31,9 +31,4 @@ impl Graph {
 
         dist
     }
-}
-
-pub enum EdgeDir {
-    Forward,
-    Reverse,
 }

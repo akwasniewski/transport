@@ -48,7 +48,7 @@ pub fn parse_osm(
     eprintln!("{} loaded", coords.len());
 
     eprint!("[3/5] building edges ...       ");
-    let raw_edges = build_edges(&ways, &coords);
+    let raw_edges = build_edges_simplified(&ways, &coords);
     drop(ways);
     let mut live_nodes: HashSet<i64> = HashSet::new();
     for &(u, v, _) in &raw_edges { live_nodes.insert(u); live_nodes.insert(v); }
@@ -89,6 +89,7 @@ pub fn parse_osm(
     eprint!("[5/5] writing files ...        ");
     let snap_path = output_dir.join(format!("{name}_snap.txt"));
     let mut w = BufWriter::new(File::create(&snap_path)?);
+    writeln!(w, "{}", sorted_nodes.len())?;  // ← add this header line
     for ((u, v), dist) in &best {
         writeln!(w, "{u} {v} {dist}")?;
     }
@@ -200,18 +201,58 @@ fn collect_coords(path: &Path, needed: &HashSet<i64>) -> HashMap<i64, (f64, f64)
         .unwrap_or_default()
 }
 
-fn build_edges(ways: &[(Vec<i64>, bool)], coords: &HashMap<i64, (f64, f64)>) -> Vec<RawEdge> {
+/// Count how many ways reference each node — intersections appear >1 time.
+fn count_node_refs(ways: &[(Vec<i64>, bool)]) -> HashMap<i64, usize> {
+    let mut counts: HashMap<i64, usize> = HashMap::new();
+    for (nodes, _) in ways {
+        // endpoints always count as "structural"
+        if let Some(&first) = nodes.first() { *counts.entry(first).or_insert(0) += 2; }
+        if let Some(&last)  = nodes.last()  { *counts.entry(last).or_insert(0)  += 2; }
+        // interior nodes
+        for &n in nodes.iter().skip(1).rev().skip(1) {
+            *counts.entry(n).or_insert(0) += 1;
+        }
+    }
+    counts
+}
+
+fn build_edges_simplified(
+    ways: &[(Vec<i64>, bool)],
+    coords: &HashMap<i64, (f64, f64)>,
+) -> Vec<RawEdge> {
+    // Count how many ways each node appears in
+    let mut ref_count: HashMap<i64, usize> = HashMap::new();
+    for (nodes, _) in ways {
+        for &n in nodes {
+            *ref_count.entry(n).or_insert(0) += 1;
+        }
+        // endpoints are always structural regardless of count
+        if let Some(&f) = nodes.first() { *ref_count.entry(f).or_insert(0) += 10; }
+        if let Some(&l) = nodes.last()  { *ref_count.entry(l).or_insert(0) += 10; }
+    }
+
     ways.par_iter()
         .flat_map(|(nodes, is_oneway)| {
             let mut edges = Vec::new();
+            let mut seg_start = nodes[0];
+            let mut accumulated_dist = 0.0;
+
             for w in nodes.windows(2) {
                 let (u, v) = (w[0], w[1]);
                 if let (Some(&(lat1, lon1)), Some(&(lat2, lon2))) =
                     (coords.get(&u), coords.get(&v))
                 {
-                    let dist = haversine_m(lat1, lon1, lat2, lon2);
-                    edges.push((u, v, dist));
-                    if !is_oneway { edges.push((v, u, dist)); }
+                    accumulated_dist += haversine_m(lat1, lon1, lat2, lon2);
+                }
+
+                // v is structural if it appears in >1 way, or is an endpoint
+                if ref_count.get(&v).copied().unwrap_or(0) > 1 {
+                    edges.push((seg_start, v, accumulated_dist));
+                    if !is_oneway {
+                        edges.push((v, seg_start, accumulated_dist));
+                    }
+                    seg_start = v;
+                    accumulated_dist = 0.0;
                 }
             }
             edges
@@ -220,6 +261,9 @@ fn build_edges(ways: &[(Vec<i64>, bool)], coords: &HashMap<i64, (f64, f64)>) -> 
 }
 
 fn largest_wcc(node_ids: &[i64], edges: &[RawEdge]) -> HashSet<i64> {
+    if node_ids.is_empty() || edges.is_empty() {
+        return HashSet::new();
+    }
     let idx: HashMap<i64, usize> =
         node_ids.iter().enumerate().map(|(i, &n)| (n, i)).collect();
     let n = node_ids.len();

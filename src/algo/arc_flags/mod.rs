@@ -1,4 +1,4 @@
 pub mod preprocess;
-pub mod arc_flags;
+pub mod divisions;
 pub mod bidirecional;
-mod divide_into_regions;
+pub mod arc_flags_astar;

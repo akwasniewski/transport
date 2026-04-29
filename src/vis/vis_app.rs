@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     algo::{
-        alt::landmarks::alt_potential, arc_flags::arc_flags::arc_flags, arc_flags::bidirecional::bidirectional_arcflags, astar::{
+        alt::landmarks::alt_potential, arc_flags::arc_flags_astar::arc_flags_astar, arc_flags::bidirecional::bidirectional_arcflags, astar::{
             astar,
             bidirectional::bidirectional_astar,
             heuristics::{earth_dist, middle_dist, rev},
@@ -75,7 +75,7 @@ enum Assigning {
 pub struct VisApp {
     pub graph: Arc<Graph>,
     vertex_pos: Vec<egui::Pos2>,
-    edge_cache: Vec<(egui::Pos2, egui::Pos2)>,
+    edge_cache: Vec<(usize, usize)>,
     last_size: egui::Vec2,
     resize_countdown: u8,
     big_vertices: HashSet<u32>,
@@ -170,17 +170,15 @@ impl VisApp {
             .collect();
 
         self.edge_cache.clear();
-        for vertex in &self.graph.vertices {
+        for (src_idx, vertex) in self.graph.vertices.iter().enumerate() {
             for (target_label, _) in &vertex.edges {
-                if let Some(target) = self
+                if let Some(tgt_idx) = self
                     .graph
                     .vertices
                     .iter()
-                    .find(|v| v.label == *target_label)
+                    .position(|v| v.label == *target_label)
                 {
-                    let p1 = to_screen(vertex.coords.0, vertex.coords.1);
-                    let p2 = to_screen(target.coords.0, target.coords.1);
-                    self.edge_cache.push((p1, p2));
+                    self.edge_cache.push((src_idx, tgt_idx));
                 }
             }
         }
@@ -233,10 +231,10 @@ impl VisApp {
                     bidirectional_astar(&graph, source, sink, true, heura.0, heura.1)
                 }
                 AlgoChoice::ArcFlags => {
-                    arc_flags(&graph, source, sink, true, earth_dist)
+                    arc_flags_astar(&graph, source, sink, true, earth_dist)
                 }
                 AlgoChoice::ArcFlagsAlt => {
-                    arc_flags(&graph, source, sink, true, alt_potential)
+                    arc_flags_astar(&graph, source, sink, true, alt_potential)
                 }
                 AlgoChoice::BidirectionalArcFlags => {
                     bidirectional_arcflags(&graph, source, sink, true, earth_dist, rev(earth_dist))
@@ -451,37 +449,57 @@ impl eframe::App for VisApp {
 
             let painter = ui.painter_at(rect);
 
-            // Draw edges — shift from local into screen space.
-            for (p1, p2) in &self.edge_cache {
+            const LARGE_GRAPH_THRESHOLD: usize = 10_000;
+            let stride = if self.graph.size > LARGE_GRAPH_THRESHOLD {
+                (self.graph.size / LARGE_GRAPH_THRESHOLD).max(1)
+            } else {
+                1
+            };
+            
+            let drawn: Vec<bool> = (0..self.graph.size)
+                .map(|i| {
+                    i == self.source as usize
+                        || i == self.sink as usize
+                        || self.big_vertices.contains(&(i as u32))
+                        || i % stride == 0
+                })
+                .collect();
+
+            // Draw edges — both endpoints must be drawn.
+            for &(src, tgt) in &self.edge_cache {
+                if !drawn[src] || !drawn[tgt] {
+                    continue;
+                }
                 painter.line_segment(
-                    [*p1 + offset, *p2 + offset],
+                    [self.vertex_pos[src] + offset, self.vertex_pos[tgt] + offset],
                     egui::Stroke::new(1.0, egui::Color32::LIGHT_GRAY),
                 );
             }
-
-            // Draw vertices — shift from local into screen space.
             for (i, pos) in self.vertex_pos.iter().enumerate() {
-                let screen_pos = *pos + offset;
                 let is_source = i == self.source as usize;
-                let is_sink = i == self.sink as usize;
-                let is_big = self.big_vertices.contains(&(i as u32));
+                let is_sink   = i == self.sink   as usize;
+                let is_big    = self.big_vertices.contains(&(i as u32));
+
+                let cur_color = self
+                    .color_snapshot
+                    .get(i)
+                    .copied()
+                    .unwrap_or(egui::Color32::LIGHT_RED);
+                let is_visited = cur_color != egui::Color32::LIGHT_RED;
+
+                if !is_source && !is_sink && !is_big && !is_visited && (i % stride != 0) {
+                    continue;
+                }
+
+                let screen_pos = *pos + offset;
                 let base_r = if is_big { 5.0_f32 } else { 1.5_f32 };
 
                 if is_source || is_sink {
-                    let color = if is_source {
-                        egui::Color32::GREEN
-                    } else {
-                        egui::Color32::RED
-                    };
+                    let color = if is_source { egui::Color32::GREEN } else { egui::Color32::RED };
                     let r = base_r.max(5.0);
                     painter.circle_stroke(screen_pos, r + 4.0, egui::Stroke::new(2.0, color));
                     painter.circle_filled(screen_pos, r, color);
                 } else {
-                    let cur_color = self
-                        .color_snapshot
-                        .get(i)
-                        .copied()
-                        .unwrap_or(egui::Color32::LIGHT_RED);
                     painter.circle_filled(screen_pos, base_r, cur_color);
                 }
             }

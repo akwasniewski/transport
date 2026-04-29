@@ -1,6 +1,13 @@
 use std::ops::{Index, IndexMut};
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub enum EdgeDir {
+    Forward,
+    Reverse,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IndexVec<T> {
     data: Vec<T>,
 }

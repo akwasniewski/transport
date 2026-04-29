@@ -58,7 +58,7 @@ fn quickselect<T: Ord>(indices: &mut[usize], data: &[T],  k: usize) -> usize{
 
 impl Graph{
     // division_depth is log of the number of regions generated
-    pub fn divide_into_regions(&mut self, division_depth: u32){
+    pub fn divide_into_regions_kd(&mut self, division_depth: u32){
         let latitudes: Vec<OrderedFloat<f32>> = self.vertices.iter().map(|v| OrderedFloat(v.coords.0)).collect();
         let longitudes: Vec<OrderedFloat<f32>> = self.vertices.iter().map(|v| OrderedFloat(v.coords.1)).collect();
         let mut indices: Vec<usize> = (0..self.vertices.len()).collect();

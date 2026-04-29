@@ -1,21 +1,25 @@
 use crate::graph::Graph;
 
 pub fn earth_dist(graph: &Graph, cur: u32, _from: u32, to: u32) -> f32 {
-    let r = 6371009.0; // earth's radius
+    let r = 6_371_000.0_f32;
 
-    let cur_coords = graph[cur].coords;
-    let cur_coords = (cur_coords.0.to_radians(), cur_coords.1.to_radians());
-    let target_coords = graph[to].coords;
-    let target_coords = (target_coords.0.to_radians(), target_coords.1.to_radians());
+    let (lat1, lon1) = graph[cur].coords;
+    let (lat2, lon2) = graph[to].coords;
 
-    let delta_lat = cur_coords.0 - target_coords.0;
-    let mid_lat = (cur_coords.0 + target_coords.0) / 2.0;
-    let delta_long = cur_coords.1 - target_coords.1;
+    let lat1 = lat1.to_radians();
+    let lon1 = lon1.to_radians();
+    let lat2 = lat2.to_radians();
+    let lon2 = lon2.to_radians();
 
-    let x = delta_lat;
-    let y = mid_lat.cos() * delta_long;
-    let tunnel_dist = (x.powi(2) + y.powi(2)).sqrt();
-    2.0 * r * (tunnel_dist / 2.0).asin()
+    let dlat = lat2 - lat1;
+    let dlon = lon2 - lon1;
+
+    let a = (dlat / 2.0).sin().powi(2)
+        + lat1.cos() * lat2.cos() * (dlon / 2.0).sin().powi(2);
+
+    let c = 2.0 * a.sqrt().asin();
+
+    r * c
 }
 
 pub fn rev<F>(potential: F) -> impl Fn(&Graph, u32, u32, u32) -> f32

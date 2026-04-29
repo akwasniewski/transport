@@ -1,8 +1,8 @@
 use std::{collections::HashMap};
 use ordered_float::OrderedFloat;
-use crate::algo::dijkstra::distance_to_all::EdgeDir; 
 use crate::graph::{Graph, LandmarkData};
-use crate::utility::IndexVec;
+use crate::utility::{EdgeDir, IndexVec};
+use rayon::join;
 
 impl Graph {
     pub fn get_random_landmarks(&mut self, count: usize) {
@@ -39,14 +39,17 @@ impl Graph {
         }
     }
 
-    pub fn get_landmark_data(&mut self, vertex: u32){
+
+    pub fn get_landmark_data(&mut self, vertex: u32) {
+        let (from, to) = join(
+            || self.distance_to_all(vertex, EdgeDir::Forward),
+            || self.distance_to_all(vertex, EdgeDir::Reverse),
+        );
+
         self.landmarks.insert(
-                vertex,
-                LandmarkData {
-                    from: self.distance_to_all(vertex, EdgeDir::Forward),
-                    to: self.distance_to_all(vertex, EdgeDir::Reverse),
-                },
-            );
+            vertex,
+            LandmarkData { from, to },
+        );
     }
 }
 
