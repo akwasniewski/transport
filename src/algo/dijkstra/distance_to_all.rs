@@ -19,12 +19,12 @@ impl Graph {
                 EdgeDir::Reverse  => &self[cur].edges_rev,
             };
 
-            for (&neighbour, &edge_dist) in edges {
-                let new_dist = edge_dist + cur_dist;
-                if new_dist < dist[neighbour] {
-                    que.remove(&(dist[neighbour], neighbour));
-                    dist[neighbour] = new_dist;
-                    que.insert((new_dist, neighbour));
+            for e in edges {
+                let new_dist = e.length + cur_dist;
+                if new_dist < dist[e.to] {
+                    que.remove(&(dist[e.to], e.to));
+                    dist[e.to] = new_dist;
+                    que.insert((new_dist, e.to));
                 }
             }
         }

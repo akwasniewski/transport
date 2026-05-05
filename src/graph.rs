@@ -15,21 +15,25 @@ pub struct LandmarkData {
 }
 
 #[derive(Debug)]
+pub struct Edge {
+    pub to: u32,
+    pub length: OrderedFloat<f32>
+}
+
+#[derive(Debug)]
 pub struct Vertex {
-    pub(crate) label: u32,
-    pub(crate) edges: HashMap<u32, OrderedFloat<f32>>,
-    pub(crate) edges_rev: HashMap<u32, OrderedFloat<f32>>,
+    pub(crate) edges: IndexVec<Edge>,
+    pub(crate) edges_rev: IndexVec<Edge>,
     pub(crate) coords: (f32, f32),
     pub(crate) color: AtomicU32,
 }
 
 impl Vertex {
-    pub fn new(label: u32) -> Self {
+    pub fn new() -> Self {
         let init_color = u32::from_be_bytes(egui::Color32::LIGHT_RED.to_array());
         Self {
-            label,
-            edges: HashMap::new(),
-            edges_rev: HashMap::new(),
+            edges: IndexVec::new(),
+            edges_rev: IndexVec::new(),
             coords: (0.0, 0.0),
             color: AtomicU32::new(init_color),
         }
@@ -56,8 +60,8 @@ pub struct Graph {
 impl Graph {
     pub fn new(size: usize) -> Self {
         let mut vertices = Vec::new();
-        for i in 0..size {
-            vertices.push(Vertex::new(i as u32));
+        for _ in 0..size {
+            vertices.push(Vertex::new());
         }
         Self {
             size,
@@ -68,11 +72,11 @@ impl Graph {
             edge_region_flags_rev: None
         }
     }
-    pub fn add_edge(&mut self, from: u32, to: u32, travel_time: OrderedFloat<f32>) {
-        self[from].edges.insert(to, travel_time);
+    pub fn add_edge(&mut self, from: u32, to: u32, length: OrderedFloat<f32>) {
+        self[from].edges.push(Edge{to, length});
     }
-    pub fn add_reverse_edges(&mut self, from: u32, to: u32, travel_time: OrderedFloat<f32>) {
-        self[from].edges_rev.insert(to, travel_time);
+    pub fn add_reverse_edges(&mut self, from: u32, to: u32, length: OrderedFloat<f32>) {
+        self[from].edges_rev.push(Edge{to, length});
     }
     pub fn from_snap(snap: &str) -> Self {
         let mut lines = snap.lines();

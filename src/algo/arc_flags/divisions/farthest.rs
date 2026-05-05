@@ -24,8 +24,8 @@ pub fn multi_dijkstra_regions(graph: &mut Graph, sources: Vec<u32>) {
 
         graph.regions.as_mut().unwrap()[cur.vertex]= cur.source;
 
-        for c in &graph[cur.vertex].edges {
-            let alt = QueueItemSource::new(*c.0, cur.source, c.1 + cur.distance);
+        for e in &graph[cur.vertex].edges {
+            let alt = QueueItemSource::new(e.to, cur.source, e.length + cur.distance);
             if alt.distance < dist[alt.vertex] {
                 que.push(alt);
                 dist[alt.vertex] = alt.distance;

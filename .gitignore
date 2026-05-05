@@ -3,3 +3,4 @@
 cache/
 *.txt
 .DS_Store
+*.bin

@@ -33,8 +33,8 @@ pub fn dijkstra(graph: &Graph, from: u32, to: u32, animate: bool) -> AlgoResult 
                 visited_nodes,
             };
         }
-        for c in &graph[cur.vertex].edges {
-            let alt = QueueItem::new(*c.0, c.1 + cur.distance);
+        for e in &graph[cur.vertex].edges {
+            let alt = QueueItem::new(e.to, e.length + cur.distance);
             if alt.distance < dist[alt.vertex] {
                 que.push(alt);
                 dist[alt.vertex] = alt.distance;

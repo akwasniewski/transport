@@ -4,7 +4,7 @@ use crate::{
 };
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
-use std::{collections::BinaryHeap, thread};
+use std::{collections::BinaryHeap};
 use crate::utility::IndexVec;
 
 pub fn astar(
@@ -46,15 +46,15 @@ pub fn astar(
             };
         }
 
-        for c in &graph[cur.vertex].edges {
-            let alt_cost = c.1 + dist[cur.vertex].0;
-            if alt_cost < dist[*c.0] {
+        for e in &graph[cur.vertex].edges {
+            let alt_cost = e.length + dist[cur.vertex].0;
+            if alt_cost < dist[e.to] {
                 que.push(QueueItem {
-                    vertex: *(c.0),
-                    priority: alt_cost + potential(graph, *c.0, from, to),
+                    vertex: e.to,
+                    priority: alt_cost + potential(graph, e.to, from, to),
                     distance: alt_cost,
                 });
-                dist[*c.0] = alt_cost;
+                dist[e.to] = alt_cost;
             }
         }
     }

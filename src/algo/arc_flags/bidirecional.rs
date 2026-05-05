@@ -68,23 +68,23 @@ where
                 graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
             }
 
-            for c in &graph[cur.vertex].edges {
-                if !edge_region_flags[cur.vertex].get(c.0).unwrap()[regions[to]].load(Ordering::Relaxed) && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
+            for e in &graph[cur.vertex].edges {
+                if !edge_region_flags[cur.vertex].get(&e.to).unwrap()[regions[to]].load(Ordering::Relaxed) && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
                             continue;
                 } 
 
-                let alt_cost = c.1 + dist_f[cur.vertex].0;
+                let alt_cost = e.length + dist_f[cur.vertex].0;
 
-                if alt_cost < dist_f[*c.0] && dist_b[*c.0] == OrderedFloat(f32::MAX) {
+                if alt_cost < dist_f[e.to] && dist_b[e.to] == OrderedFloat(f32::MAX) {
                     que_f.push(QueueItem::with_priority(
-                        *(c.0),
-                        alt_cost + potential_f(graph, *c.0, from, to),
+                        e.to,
+                        alt_cost + potential_f(graph, e.to, from, to),
                         alt_cost,
                     ));
-                    dist_f[*c.0] = alt_cost;
+                    dist_f[e.to] = alt_cost;
                 }
-                if alt_cost + dist_b[*c.0] < best_dist {
-                    best_dist = alt_cost + dist_b[*c.0];
+                if alt_cost + dist_b[e.to] < best_dist {
+                    best_dist = alt_cost + dist_b[e.to];
                 }
             }
         }
@@ -102,23 +102,23 @@ where
                 thread::sleep(Duration::from_millis(2));
             }
 
-            for c in &graph[cur.vertex].edges_rev {
-                if !edge_region_flags[cur.vertex].get(c.0).unwrap()[regions[from]].load(Ordering::Relaxed) && regions[cur.vertex] != regions[to] && regions[cur.vertex] != regions[from]{
+            for e in &graph[cur.vertex].edges_rev {
+                if !edge_region_flags_rev[cur.vertex].get(&e.to).unwrap()[regions[from]].load(Ordering::Relaxed) && regions[cur.vertex] != regions[to] && regions[cur.vertex] != regions[from]{
                     continue;
                 } 
 
-                let alt_cost = c.1 + dist_b[cur.vertex].0;
+                let alt_cost = e.length + dist_b[cur.vertex].0;
 
-                if alt_cost < dist_b[*c.0] && dist_f[*c.0] == OrderedFloat(f32::MAX) {
+                if alt_cost < dist_b[e.to] && dist_f[e.to] == OrderedFloat(f32::MAX) {
                     que_b.push(QueueItem::with_priority(
-                        *(c.0),
-                        alt_cost + potential_b(graph, *c.0, from, to),
+                        e.to,
+                        alt_cost + potential_b(graph, e.to, from, to),
                         alt_cost,
                     ));
-                    dist_b[*c.0] = alt_cost;
+                    dist_b[e.to] = alt_cost;
                 }
-                if alt_cost + dist_f[*c.0] < best_dist {
-                    best_dist = alt_cost + dist_f[*c.0];
+                if alt_cost + dist_f[e.to] < best_dist {
+                    best_dist = alt_cost + dist_f[e.to];
                 }
             }
         }

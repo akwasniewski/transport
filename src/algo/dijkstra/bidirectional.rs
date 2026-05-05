@@ -46,14 +46,14 @@ pub fn bidirectional_dijkstra(graph: &Graph, from: u32, to: u32, animate: bool) 
                 graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
             }
 
-            for c in &graph[cur.vertex].edges {
-                let alt: QueueItem = QueueItem::new(*c.0, c.1 + cur.distance);
+            for e in &graph[cur.vertex].edges {
+                let alt: QueueItem = QueueItem::new(e.to, e.length + cur.distance);
                 if alt.distance < dist_f[alt.vertex] {
                     que_f.push(alt);
                     dist_f[alt.vertex] = alt.distance;
                 }
-                if alt.distance + dist_b[*c.0] < best_dist {
-                    best_dist = alt.distance + dist_b[*c.0];
+                if alt.distance + dist_b[e.to] < best_dist {
+                    best_dist = alt.distance + dist_b[e.to];
                 }
             }
         } else {
@@ -68,14 +68,14 @@ pub fn bidirectional_dijkstra(graph: &Graph, from: u32, to: u32, animate: bool) 
             if animate && cur.vertex != from && cur.vertex != to {
                 graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
             }
-            for c in &graph[cur.vertex].edges_rev {
-                let alt: QueueItem = QueueItem::new(*c.0, c.1 + cur.distance);
+            for e in &graph[cur.vertex].edges_rev {
+                let alt: QueueItem = QueueItem::new(e.to, e.length + cur.distance);
                 if alt.distance < dist_b[alt.vertex] {
                     que_b.push(alt);
                     dist_b[alt.vertex] = alt.distance;
                 }
-                if alt.distance + dist_f[*c.0] < best_dist {
-                    best_dist = alt.distance + dist_f[*c.0];
+                if alt.distance + dist_f[e.to] < best_dist {
+                    best_dist = alt.distance + dist_f[e.to];
                 }
             }
         }

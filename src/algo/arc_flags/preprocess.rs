@@ -29,7 +29,7 @@ impl Graph {
             EdgeDir::Forward => &self.vertices[vertex as usize].edges,
             EdgeDir::Reverse => &self.vertices[vertex as usize].edges_rev,
         };
-        edges.iter().any(|neighbour| regions[*neighbour.0] != regions[vertex])
+        edges.iter().any(|e| regions[e.1.to] != regions[vertex])
     }
 
     pub fn preprocess_region_edges(&mut self, region_count: usize, dir: EdgeDir) {
@@ -45,16 +45,16 @@ impl Graph {
 
         for vertex in 0..self.size {
             let edges: Vec<_> = match dir {
-                EdgeDir::Forward => self.vertices[vertex].edges.iter().map(|(k, v)| (*k, *v)).collect(),
-                EdgeDir::Reverse => self.vertices[vertex].edges_rev.iter().map(|(k, v)| (*k, *v)).collect(),
+                EdgeDir::Forward => self.vertices[vertex].edges.iter().collect(),
+                EdgeDir::Reverse => self.vertices[vertex].edges_rev.iter().collect(),
             };
             let flags = match dir {
                 EdgeDir::Forward => self.edge_region_flags.as_mut().unwrap(),
                 EdgeDir::Reverse => self.edge_region_flags_rev.as_mut().unwrap(),
             };
             flags.push(HashMap::new());
-            for (k, _) in edges {
-                flags[vertex as u32].insert(k, IndexVec::from_vec((0..region_count).map(|_| AtomicBool::new(false)).collect()));
+            for e in edges {
+                flags[vertex as u32].insert(e.1.to, IndexVec::from_vec((0..region_count).map(|_| AtomicBool::new(false)).collect()));
             }
         }
 
@@ -90,11 +90,11 @@ impl Graph {
                 flags[cur.vertex][&pred[cur.vertex]][region_source as u32].store(true, Ordering::Relaxed);
             }
             let neighbors = match dir {
-                EdgeDir::Forward => self.vertices[cur.vertex as usize].edges_rev.iter().map(|(k, v)| (*k, *v)).collect::<Vec<_>>(),
-                EdgeDir::Reverse => self.vertices[cur.vertex as usize].edges.iter().map(|(k, v)| (*k, *v)).collect::<Vec<_>>(),
+                EdgeDir::Forward => self.vertices[cur.vertex as usize].edges_rev.iter().collect::<Vec<_>>(),
+                EdgeDir::Reverse => self.vertices[cur.vertex as usize].edges.iter().collect::<Vec<_>>(),
             };
-            for (nb, weight) in neighbors {
-                let alt = QueueItem::new(nb, weight + cur.distance);
+            for (_, e) in neighbors {
+                let alt = QueueItem::new(e.to, e.length + cur.distance);
                 if alt.distance < dist[alt.vertex] {
                     que.push(alt);
                     dist[alt.vertex] = alt.distance;
