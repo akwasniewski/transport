@@ -1,9 +1,10 @@
+use bitvec::{order::Lsb0, vec::BitVec};
 use eframe::egui;
 use ordered_float::OrderedFloat;
 use std::{
     collections::HashMap,
     fs,
-    sync::atomic::{AtomicBool, AtomicU32, Ordering},
+    sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering},
 };
 use std::ops::{Index, IndexMut};
 use crate::utility::IndexVec;
@@ -53,8 +54,8 @@ pub struct Graph {
     pub vertices: Vec<Vertex>,
     pub(crate) landmarks: HashMap<u32, LandmarkData>,
     pub(crate) regions: Option<IndexVec<u32>>,
-    pub(crate) edge_region_flags: Option<IndexVec<HashMap<u32, IndexVec<AtomicBool>>>>,
-    pub(crate) edge_region_flags_rev: Option<IndexVec<HashMap<u32, IndexVec<AtomicBool>>>>,
+    pub(crate) edge_region_flags: Option<IndexVec<IndexVec<BitVec<AtomicUsize, Lsb0>>>>,
+    pub(crate) edge_region_flags_rev: Option<IndexVec<IndexVec<BitVec<AtomicUsize, Lsb0>>>>,
 }
 
 impl Graph {

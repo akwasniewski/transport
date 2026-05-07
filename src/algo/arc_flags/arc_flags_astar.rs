@@ -50,8 +50,8 @@ pub fn arc_flags_astar(
             };
         }
 
-        for e in &graph[cur.vertex].edges {
-            if !edge_region_flags[cur.vertex].get(&e.to).unwrap()[regions[to]].load(Ordering::Relaxed) && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
+        for (edge_idx, e) in graph[cur.vertex].edges.iter() {
+            if !edge_region_flags[cur.vertex][edge_idx][regions[to] as usize] && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
                 continue;
             } 
             let alt_cost = e.length + dist[cur.vertex].0;

@@ -68,8 +68,8 @@ where
                 graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
             }
 
-            for e in &graph[cur.vertex].edges {
-                if !edge_region_flags[cur.vertex].get(&e.to).unwrap()[regions[to]].load(Ordering::Relaxed) && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
+            for (edge_idx, e) in graph[cur.vertex].edges.iter() {
+                if !edge_region_flags[cur.vertex][edge_idx][regions[to] as usize] && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
                             continue;
                 } 
 
@@ -102,8 +102,8 @@ where
                 thread::sleep(Duration::from_millis(2));
             }
 
-            for e in &graph[cur.vertex].edges_rev {
-                if !edge_region_flags_rev[cur.vertex].get(&e.to).unwrap()[regions[from]].load(Ordering::Relaxed) && regions[cur.vertex] != regions[to] && regions[cur.vertex] != regions[from]{
+            for (edge_idx, e) in graph[cur.vertex].edges_rev.iter() {
+                if !edge_region_flags_rev[cur.vertex][edge_idx][regions[from] as usize] && regions[cur.vertex] != regions[to] && regions[cur.vertex] != regions[from]{
                     continue;
                 } 
 

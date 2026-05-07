@@ -1,5 +1,5 @@
 use std::collections::{BinaryHeap, HashMap};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::Instant;
 
 use crate::algo::utils::QueueItem;
@@ -12,6 +12,9 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::path::Path;
 use bincode::{serialize_into, deserialize_from};
+use bitvec::order::Lsb0;
+use bitvec::vec::BitVec;
+use bitvec::prelude::*;
 use ordered_float::OrderedFloat;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Serialize, Deserialize};
@@ -52,9 +55,9 @@ impl Graph {
                 EdgeDir::Forward => self.edge_region_flags.as_mut().unwrap(),
                 EdgeDir::Reverse => self.edge_region_flags_rev.as_mut().unwrap(),
             };
-            flags.push(HashMap::new());
-            for e in edges {
-                flags[vertex as u32].insert(e.1.to, IndexVec::from_vec((0..region_count).map(|_| AtomicBool::new(false)).collect()));
+            flags.push(IndexVec::new());
+            for _ in edges.iter() {
+                flags[vertex as u32].push(bitvec![AtomicUsize, Lsb0; 0; region_count]);
             }
         }
 
@@ -87,7 +90,17 @@ impl Graph {
                 continue;
             }
             if cur.vertex != source {
-                flags[cur.vertex][&pred[cur.vertex]][region_source as u32].store(true, Ordering::Relaxed);
+                let pred_edge_idx = match dir{
+                    EdgeDir::Forward => self.vertices[cur.vertex as usize].edges.iter().collect::<Vec<_>>(),
+                    EdgeDir::Reverse => self.vertices[cur.vertex as usize].edges_rev.iter().collect::<Vec<_>>(),
+                }.iter().position(|e| e.1.to == pred[cur.vertex]).unwrap();
+
+            let word_idx = region_source / usize::BITS as usize;
+            let bit_idx  = region_source % usize::BITS as usize;
+
+            flags[cur.vertex][pred_edge_idx as u32]
+                .as_raw_slice()[word_idx]
+                .fetch_or(1 << bit_idx, Ordering::Relaxed);
             }
             let neighbors = match dir {
                 EdgeDir::Forward => self.vertices[cur.vertex as usize].edges_rev.iter().collect::<Vec<_>>(),
@@ -110,25 +123,10 @@ impl Graph {
 #[derive(Serialize, Deserialize)]
 struct EdgeRegionCache {
     regions:               IndexVec<u32>,
-    edge_region_flags:     IndexVec<HashMap<u32, IndexVec<bool>>>,
-    edge_region_flags_rev: IndexVec<HashMap<u32, IndexVec<bool>>>,
+    edge_region_flags:     IndexVec<IndexVec<BitVec<AtomicUsize, Lsb0>>>,
+    edge_region_flags_rev: IndexVec<IndexVec<BitVec<AtomicUsize, Lsb0>>>,
 }
 
-fn atomic_to_bool(flags: &IndexVec<HashMap<u32, IndexVec<AtomicBool>>>) -> IndexVec<HashMap<u32, IndexVec<bool>>> {
-    IndexVec::from_vec(flags.as_ref().iter().map(|map| {
-        map.iter().map(|(&k, v)| {
-            (k, IndexVec::from_vec(v.as_ref().iter().map(|b| b.load(Ordering::Relaxed)).collect()))
-        }).collect()
-    }).collect())
-}
-
-fn bool_to_atomic(flags: IndexVec<HashMap<u32, IndexVec<bool>>>) -> IndexVec<HashMap<u32, IndexVec<AtomicBool>>> {
-    IndexVec::from_vec(flags.as_ref().iter().map(|map| {
-        map.iter().map(|(&k, v)| {
-            (k, IndexVec::from_vec(v.as_ref().iter().map(|&b| AtomicBool::new(b)).collect()))
-        }).collect()
-    }).collect())
-}
 
 impl Graph {
     pub fn save_edge_region_cache(&self, path: impl AsRef<Path>) -> Result<(), Box<dyn std::error::Error>> {
@@ -138,8 +136,8 @@ impl Graph {
 
         let cache = EdgeRegionCache {
             regions:               regions.clone(),
-            edge_region_flags:     atomic_to_bool(flags),
-            edge_region_flags_rev: atomic_to_bool(flags_rev),
+            edge_region_flags:     flags.clone(),
+            edge_region_flags_rev: flags_rev.clone(),
         };
 
         let file = File::create(path)?;
@@ -157,8 +155,8 @@ impl Graph {
         let cache: EdgeRegionCache = deserialize_from(BufReader::new(file))?;
 
         self.regions               = Some(cache.regions);
-        self.edge_region_flags     = Some(bool_to_atomic(cache.edge_region_flags));
-        self.edge_region_flags_rev = Some(bool_to_atomic(cache.edge_region_flags_rev));
+        self.edge_region_flags     = Some(cache.edge_region_flags);
+        self.edge_region_flags_rev = Some(cache.edge_region_flags_rev);
         Ok(true)
     }
 }
