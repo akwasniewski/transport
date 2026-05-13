@@ -6,14 +6,7 @@ use std::{
 };
 
 use crate::{
-    algo::{
-        alt::landmarks::alt_potential, arc_flags::arc_flags_astar::arc_flags_astar, arc_flags::bidirecional::bidirectional_arcflags, astar::{
-            astar,
-            bidirectional::bidirectional_astar,
-            heuristics::{earth_dist, middle_dist, rev},
-        }, dijkstra::{bidirectional::bidirectional_dijkstra, dijkstra}
-    },
-    graph::Graph,
+    algo::{alt, alt_arc_flags, astar, astar_arc_flags, astar_bidirectional, astar_bidirectional_arc_flags, dijkstra, dijkstra_arc_flags, dijkstra_bidirectional}, graph::Graph
 };
 
 // ── Algorithm selector ────────────────────────────────────────────────────────
@@ -21,40 +14,40 @@ use crate::{
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AlgoChoice {
     Dijkstra,
+    DijkstraArcFlags,
     Astar,
     Alt,
-    BidirectionalDijkstra,
-    BidirectionalAstar,
-    BidirectionalAstarMiddle,
-    ArcFlags,
-    ArcFlagsAlt,
-    BidirectionalArcFlags,
+    DijkstraBidirectional,
+    AstarBidirectional,
+    AstarArcFlags,
+    AltArcFlags,
+    AstarBidirectionalArcFlags,
 }
 
 impl AlgoChoice {
     const ALL: &'static [AlgoChoice] = &[
         AlgoChoice::Dijkstra,
+        AlgoChoice::DijkstraArcFlags,
         AlgoChoice::Astar,
         AlgoChoice::Alt,
-        AlgoChoice::BidirectionalDijkstra,
-        AlgoChoice::BidirectionalAstar,
-        AlgoChoice::BidirectionalAstarMiddle,
-        AlgoChoice::ArcFlags,
-        AlgoChoice::ArcFlagsAlt,
-        AlgoChoice::BidirectionalArcFlags
+        AlgoChoice::DijkstraBidirectional,
+        AlgoChoice::AstarBidirectional,
+        AlgoChoice::AstarArcFlags,
+        AlgoChoice::AltArcFlags,
+        AlgoChoice::AstarBidirectionalArcFlags
     ];
 
     fn label(self) -> &'static str {
         match self {
             AlgoChoice::Dijkstra => "Dijkstra",
+            AlgoChoice::DijkstraArcFlags => "Dijkstra arc flags",
             AlgoChoice::Astar => "A*",
             AlgoChoice::Alt => "Random Alt",
-            AlgoChoice::BidirectionalDijkstra => "Bidirectional Dijkstra",
-            AlgoChoice::BidirectionalAstar => "Bidirectional A*",
-            AlgoChoice::BidirectionalAstarMiddle => "Bidirectional A* (middle)",
-            AlgoChoice::ArcFlags => "Arc flags",
-            AlgoChoice::ArcFlagsAlt => "Arc flags with random alt potential",
-            AlgoChoice::BidirectionalArcFlags => "Bidirectional arc flags",
+            AlgoChoice::DijkstraBidirectional => "Bidirectional Dijkstra",
+            AlgoChoice::AstarBidirectional => "Bidirectional A*",
+            AlgoChoice::AstarArcFlags => "Arc flags",
+            AlgoChoice::AltArcFlags => "Arc flags with alt potential",
+            AlgoChoice::AstarBidirectionalArcFlags => "Bidirectional arc flags",
         }
     }
 }
@@ -209,27 +202,26 @@ impl VisApp {
 
         thread::spawn(move || {
             let dist = match algo {
-                AlgoChoice::Dijkstra => dijkstra(&graph, source, sink, true),
-                AlgoChoice::Astar => astar(&graph, source, sink, true, earth_dist),
-                AlgoChoice::Alt => astar(&graph, source, sink, true, alt_potential),
-                AlgoChoice::BidirectionalDijkstra => {
-                    bidirectional_dijkstra(&graph, source, sink, true)
+                AlgoChoice::Dijkstra => dijkstra(&graph, source, sink),
+                AlgoChoice::Astar => astar(&graph, source, sink),
+                AlgoChoice::Alt => alt(&graph, source, sink),
+                AlgoChoice::DijkstraBidirectional => {
+                    dijkstra_bidirectional(&graph, source, sink)
                 }
-                AlgoChoice::BidirectionalAstar => {
-                    bidirectional_astar(&graph, source, sink, true, earth_dist, rev(earth_dist))
+                AlgoChoice::DijkstraArcFlags => {
+                    dijkstra_arc_flags(&graph, source, sink)
                 }
-                AlgoChoice::BidirectionalAstarMiddle => {
-                    let heura = middle_dist(earth_dist);
-                    bidirectional_astar(&graph, source, sink, true, heura.0, heura.1)
+                AlgoChoice::AstarBidirectional => {
+                    astar_bidirectional(&graph, source, sink)
                 }
-                AlgoChoice::ArcFlags => {
-                    arc_flags_astar(&graph, source, sink, true, earth_dist)
+                AlgoChoice::AstarArcFlags => {
+                    astar_arc_flags(&graph, source, sink)
                 }
-                AlgoChoice::ArcFlagsAlt => {
-                    arc_flags_astar(&graph, source, sink, true, alt_potential)
+                AlgoChoice::AltArcFlags => {
+                    alt_arc_flags(&graph, source, sink)
                 }
-                AlgoChoice::BidirectionalArcFlags => {
-                    bidirectional_arcflags(&graph, source, sink, true, earth_dist, rev(earth_dist))
+                AlgoChoice::AstarBidirectionalArcFlags => {
+                    astar_bidirectional_arc_flags(&graph, source, sink)
                 }
             };
             *result.lock().unwrap() = dist.distance;

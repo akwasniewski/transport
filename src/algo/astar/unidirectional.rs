@@ -4,22 +4,18 @@ use crate::{
 };
 use eframe::egui::Color32;
 use ordered_float::OrderedFloat;
-use std::{collections::BinaryHeap, sync::atomic::Ordering, thread};
+use std::{collections::BinaryHeap, time::Instant};
 use crate::utility::IndexVec;
 
-//copy of astar with needed changes
-pub fn arc_flags_astar(
+pub fn unidirectional(
     graph: &Graph,
     from: u32,
     to: u32,
-    animate: bool,
     potential: fn(&Graph, u32, u32, u32) -> f32,
+    use_arc_flags: bool
 ) -> AlgoResult {
-    let edge_region_flags = graph.edge_region_flags.as_ref().unwrap();
-    let regions = graph.regions.as_ref().unwrap();
-
     let mut dist: IndexVec<OrderedFloat<f32>> = index_vec![OrderedFloat(f32::MAX); graph.size];
-
+    let start = Instant::now();
     let mut que: BinaryHeap<QueueItem> = BinaryHeap::new();
     dist[from] = OrderedFloat(0.0);
     que.push(QueueItem::with_priority(
@@ -37,23 +33,29 @@ pub fn arc_flags_astar(
             continue;
         }
 
-        if animate && cur.vertex != from && cur.vertex != to {
-            graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
-        }
+        graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
 
         visited_nodes += 1;
 
         if cur.vertex == to {
-            return AlgoResult {
-                distance: Some(dist[to].0),
-                visited_nodes,
-            };
+            return AlgoResult::ok(dist[to].0,visited_nodes, start.elapsed());
         }
 
         for (edge_idx, e) in graph[cur.vertex].edges.iter() {
-            if !edge_region_flags[cur.vertex][edge_idx][regions[to] as usize] && regions[cur.vertex] != regions[from] && regions[cur.vertex] != regions[to]{
-                continue;
-            } 
+            match (use_arc_flags, &graph.edge_region_flags, &graph.regions){
+                (true, Some(edge_region_flags), Some(regions)) =>{
+                    if !edge_region_flags[cur.vertex][edge_idx][regions[to] as usize] 
+                        && regions[cur.vertex] != regions[from] 
+                        && regions[cur.vertex] != regions[to]{
+                        continue;
+                    }
+                },
+                (true, _ , _) => {
+                    return AlgoResult::err("Ran algorithm with use arc flags when arc flags not set")
+                }
+                _ => {}
+            }
+
             let alt_cost = e.length + dist[cur.vertex].0;
             if alt_cost < dist[e.to] {
                 que.push(QueueItem {
@@ -65,8 +67,5 @@ pub fn arc_flags_astar(
             }
         }
     }
-    AlgoResult {
-        distance: None,
-        visited_nodes,
-    }
+    AlgoResult::err("Path not found")
 }

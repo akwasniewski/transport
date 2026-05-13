@@ -46,3 +46,7 @@ where
     };
     (Box::new(forward), Box::new(backward))
 }
+
+pub fn dijkstra_potential(_graph: &Graph, _cur: u32, _from: u32, _to: u32) -> f32{
+    0.0
+}

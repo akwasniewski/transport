@@ -3,18 +3,9 @@ mod graph;
 mod vis;
 mod graph_building;
 mod utility;
-use crate::{
-    algo::{
-        alt::landmarks::alt_potential, arc_flags::{arc_flags_astar::arc_flags_astar, bidirecional::bidirectional_arcflags}, astar::{
-            astar,
-            bidirectional::bidirectional_astar,
-            heuristics::{earth_dist, middle_dist, rev},
-        }, dijkstra::{bidirectional::bidirectional_dijkstra, dijkstra}
-    },
-    graph::Graph, vis::visualize_algorithm,
-};
+mod benchmark;
+use crate::{benchmark::{benchmark, preprocess_dijkstra}, vis::visualize};
 
-use graph_building::{parse_osm, ParseConfig};
 
 // fn main() {
 //     let result = parse_osm(
@@ -27,42 +18,8 @@ use graph_building::{parse_osm, ParseConfig};
 //     println!("nodes: {}, edges: {}", result.node_count, result.edge_count);
 // }
 fn main() {
-    let mut graph = Graph::from_files("graphs/poland_s_snap.txt", "graphs/poland_s_coords.txt");
-    println!("Dijkstra: {}", dijkstra(&graph, 0, 6000, false));
-    // println!("Astar: {}", astar(&graph, 0, 6000, false, earth_dist));
-    //
-    //
-    //
-    graph.get_farthest_landmarks(64);
-    println!("Alt farthest: {}", astar(&graph, 0, 6000, false, alt_potential));
-    //
-    // println!(
-    //     "Bidirectional Dijkstra: {}",
-    //     bidirectional_dijkstra(&graph, 0, 6000, false)
-    // );
-    // println!(
-    //     "Bidirectional astar: {}",
-    //     bidirectional_astar(&graph, 0, 6000, false, earth_dist, rev(earth_dist))
-    // );
-    // let heura = middle_dist(earth_dist);
-    // println!(
-    //     "Bidirectional astar middle: {}",
-    //     bidirectional_astar(&graph, 0, 6000, false, heura.0, heura.1)
-    // );
-    //
-    graph.divide_into_regions_dijkstra(64);
-    graph.preprocess_region_edges(64, utility::EdgeDir::Forward);
-    graph.preprocess_region_edges(64, utility::EdgeDir::Reverse);
-    
-    // let _ = graph.load_edge_region_cache("graphs/edge_region_cache_farthest.bin");
-    // let _ = graph.save_edge_region_cache("graphs/edge_region_cache_farthest.bin");
-    // println!("Arc flags: {}", arc_flags_astar(&graph, 0, 6000, false, earth_dist));
-    // println!("Arc flags alt: {}", arc_flags_astar(&graph, 0, 6000, false, alt_potential));
-
-    // let _ = graph.load_edge_region_cache("graphs/edge_region_cache_farthest_boolvec.bin");
-    let _ = graph.save_edge_region_cache("graphs/edge_region_cache_farthest_boolvec.bin");
-    println!("Arc flags: {}", arc_flags_astar(&graph, 0, 6000, false, earth_dist));
-    println!("Arc flags alt: {}", arc_flags_astar(&graph, 0, 6000, false, alt_potential));
-    println!("Bidirectional Arc flags: {}", bidirectional_arcflags(&graph, 0, 6000, false, earth_dist, rev(earth_dist)));
-    visualize_algorithm(graph, 0, 6000);
+    let graph_prefix = "poland_s";
+    // preprocess_dijkstra(graph_prefix);
+    benchmark(graph_prefix, 0, 6000);
+    visualize(graph_prefix);
 }
