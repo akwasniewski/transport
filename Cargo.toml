@@ -7,6 +7,7 @@ edition = "2024"
 bincode = "1.3.0"
 bitvec = {version = "1.0.1", features=["atomic", "serde"]}
 eframe = "0.33.3"
+half = "2.7.1"
 hashbrown = "0.17.0"
 ordered-float = { version = "5.1.0", features = ["serde"] }
 osmpbf = "0.3.8"

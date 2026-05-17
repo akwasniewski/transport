@@ -34,9 +34,9 @@ pub fn preprocess_flags(graph_prefix: &str){
 
 
     let mut graph = Graph::from_files(&snap_path, &coords_path);
-    graph.divide_into_regions_dijkstra(64);
-    graph.preprocess_region_edges(64, utility::EdgeDir::Forward);
-    graph.preprocess_region_edges(64, utility::EdgeDir::Reverse);
+    graph.divide_into_regions_dijkstra(128);
+    graph.preprocess_region_edges(128, utility::EdgeDir::Forward);
+    graph.preprocess_region_edges(128, utility::EdgeDir::Reverse);
 
     let _ = graph.save_edge_region_cache(flags_path);
 

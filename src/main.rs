@@ -19,10 +19,10 @@ use crate::{benchmark::benchmark, graph_building::{ParseConfig, parse_osm}, prep
 //     println!("nodes: {}, edges: {}", result.node_count, result.edge_count);
 // }
 fn main() {
-    let graph_prefix = "europe";
+    let graph_prefix = "poland_s";
     // preprocess_landmarks(graph_prefix);
     // preprocess_flags(graph_prefix);
     // preprocess_contraction(graph_prefix);
-    benchmark(graph_prefix, 0, 6020);
-    // visualize(graph_prefix);
+    // benchmark(graph_prefix, 0, 6020);
+    visualize(graph_prefix);
 }

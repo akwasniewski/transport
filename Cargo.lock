@@ -2775,6 +2775,7 @@ dependencies = [
  "bincode",
  "bitvec",
  "eframe",
+ "half",
  "hashbrown 0.17.0",
  "ordered-float",
  "osmpbf",

@@ -137,6 +137,7 @@ impl Graph {
             .unwrap_or_else(|_| panic!("Failed to read coords file: {coords_path}"));
 
         let mut graph = Graph::from_snap(&snap_data);
+
         graph.add_coords(&coords_data);
         graph
     }
