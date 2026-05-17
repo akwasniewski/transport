@@ -12,7 +12,7 @@ pub fn unidirectional(
     from: u32,
     to: u32,
     potential: fn(&Graph, u32, u32, u32) -> f32,
-    use_arc_flags: bool
+    use_arc_flags: bool,
 ) -> AlgoResult {
     let mut dist: IndexVec<OrderedFloat<f32>> = index_vec![OrderedFloat(f32::MAX); graph.size];
     let start = Instant::now();

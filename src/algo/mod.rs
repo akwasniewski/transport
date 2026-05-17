@@ -1,4 +1,4 @@
-use crate::{algo::{algo_result::AlgoResult, alt::landmarks::alt_potential, astar::{bidirectional::bidirectional, heuristics::{dijkstra_potential, earth_dist, middle_dist}, unidirectional::unidirectional}}, graph::Graph};
+use crate::{algo::{algo_result::AlgoResult, alt::landmarks::alt_potential, astar::{bidirectional::bidirectional, heuristics::{dijkstra_potential, earth_dist, middle_dist, rev}, unidirectional::unidirectional}}, graph::Graph};
 
 
 pub mod algo_result;
@@ -7,7 +7,7 @@ pub mod astar;
 pub mod dijkstra;
 mod utils;
 pub mod arc_flags;
-
+pub mod contraction;
 pub fn dijkstra(
     graph: &Graph,
     from: u32,
@@ -29,7 +29,7 @@ pub fn dijkstra_bidirectional(
     from: u32,
     to: u32,
 )->AlgoResult{
-    bidirectional(graph, from, to, false, dijkstra_potential, dijkstra_potential)
+    bidirectional(graph, from, to, dijkstra_potential, dijkstra_potential, false, false)
 }
 pub fn astar(
     graph: &Graph,
@@ -52,8 +52,7 @@ pub fn astar_bidirectional(
     from: u32,
     to: u32,
 )->AlgoResult{
-    let heura = middle_dist(earth_dist);
-    bidirectional(graph, from, to, false, heura.0, heura.1)
+    bidirectional(graph, from, to, earth_dist, rev(earth_dist), false, false)
 }
 
 pub fn astar_bidirectional_arc_flags(
@@ -61,8 +60,7 @@ pub fn astar_bidirectional_arc_flags(
     from: u32,
     to: u32,
 )->AlgoResult{
-    let heura = middle_dist(earth_dist);
-    bidirectional(graph, from, to, true, heura.0, heura.1)
+    bidirectional(graph, from, to, earth_dist, rev(earth_dist), true, false)
 }
 
 pub fn alt(
@@ -82,3 +80,18 @@ pub fn alt_arc_flags(
     unidirectional(graph, from, to, alt_potential, true)
 }
 
+pub fn contraction_hierarchies(
+    graph: &Graph,
+    from: u32,
+    to: u32,
+) -> AlgoResult{
+    bidirectional(graph, from, to, dijkstra_potential, dijkstra_potential, false, true)
+}
+
+pub fn astar_contraction_hierarchies(
+    graph: &Graph,
+    from: u32,
+    to: u32,
+) -> AlgoResult{
+    bidirectional(graph, from, to, earth_dist, rev(earth_dist), false, true)
+}

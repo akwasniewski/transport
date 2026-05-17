@@ -1,6 +1,7 @@
 use bitvec::{order::Lsb0, vec::BitVec};
 use eframe::egui;
 use ordered_float::OrderedFloat;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fs,
@@ -15,7 +16,7 @@ pub struct LandmarkData {
     pub from: IndexVec<OrderedFloat<f32>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Edge {
     pub to: u32,
     pub length: OrderedFloat<f32>
@@ -27,6 +28,7 @@ pub struct Vertex {
     pub(crate) edges_rev: IndexVec<Edge>,
     pub(crate) coords: (f32, f32),
     pub(crate) color: AtomicU32,
+    pub(crate) rank: u32,
 }
 
 impl Vertex {
@@ -37,6 +39,7 @@ impl Vertex {
             edges_rev: IndexVec::new(),
             coords: (0.0, 0.0),
             color: AtomicU32::new(init_color),
+            rank: 0
         }
     }
     pub fn set_coords(&mut self, lat: f32, lon: f32) {

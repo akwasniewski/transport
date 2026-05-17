@@ -10,9 +10,10 @@ pub fn bidirectional<Ff, Fb>(
     graph: &Graph,
     from: u32,
     to: u32,
-    use_arc_flags: bool, 
     potential_f: Ff,
     potential_b: Fb,
+    use_arc_flags: bool, 
+    use_contraction_hierarchies: bool
 ) -> AlgoResult
 where
     Ff: Fn(&Graph, u32, u32, u32) -> f32 + Send + Sync + 'static,
@@ -61,6 +62,9 @@ where
             graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
 
             for (edge_idx, e) in graph[cur.vertex].edges.iter() {
+                if use_contraction_hierarchies && graph[cur.vertex].rank > graph[e.to].rank{
+                    continue;
+                }
                 match (use_arc_flags, &graph.edge_region_flags, &graph.regions){
                     (true, Some(edge_region_flags), Some(regions)) =>{
                         if !edge_region_flags[cur.vertex][edge_idx][regions[to] as usize] 
@@ -77,7 +81,7 @@ where
 
                 let alt_cost = e.length + dist_f[cur.vertex].0;
 
-                if alt_cost < dist_f[e.to] && dist_b[e.to] == OrderedFloat(f32::MAX) {
+                if alt_cost < dist_f[e.to]{
                     que_f.push(QueueItem::with_priority(
                         e.to,
                         alt_cost + potential_f(graph, e.to, from, to),
@@ -103,6 +107,9 @@ where
             graph[cur.vertex].recolor(Color32::LIGHT_BLUE);
 
             for (edge_idx, e) in graph[cur.vertex].edges_rev.iter() {
+                if use_contraction_hierarchies && graph[cur.vertex].rank > graph[e.to].rank{
+                    continue;
+                }
                 match (use_arc_flags, &graph.edge_region_flags, &graph.regions){
                     (true, Some(edge_region_flags), Some(regions)) =>{
                         if !edge_region_flags[cur.vertex][edge_idx][regions[from] as usize] 
@@ -120,7 +127,7 @@ where
                 
                 let alt_cost = e.length + dist_b[cur.vertex].0;
 
-                if alt_cost < dist_b[e.to] && dist_f[e.to] == OrderedFloat(f32::MAX) {
+                if alt_cost < dist_b[e.to] {
                     que_b.push(QueueItem::with_priority(
                         e.to,
                         alt_cost + potential_b(graph, e.to, from, to),

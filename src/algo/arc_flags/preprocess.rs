@@ -65,12 +65,7 @@ impl Graph {
             .filter(|&v| self.is_vertex_on_region_border(v, dir))
             .collect();
 
-        let start = Instant::now();
-
         border_vertices.par_iter().for_each(|&v| self.compute_region_flags(v, dir));
-
-        let duration = start.elapsed();
-        println!("took: {:?}", duration);
     }
     fn compute_region_flags(&self, source: u32, dir: EdgeDir) {
         let regions = self.regions.as_ref().unwrap();
